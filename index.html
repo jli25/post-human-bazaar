@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Post-Human Bazaar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google Fonts: Montserrat -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #121212;
+      overflow: hidden;
+      font-family: 'Urbanist', 'Montserrat', Arial, Helvetica, sans-serif;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      font-family: 'Montserrat', Arial, Helvetica, sans-serif;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .top-right {
+      position: absolute;
+      top: 32px;
+      right: 48px;
+      display: flex;
+      gap: 24px;
+      z-index: 2;
+    }
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(30,30,30,0.8);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      outline: none;
+    }
+    .icon-btn:hover {
+      background: rgba(60,60,60,0.9);
+    }
+    .icon-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: #fff;
+    }
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      z-index: 0;
+    }
+    /* Blob Cursor Styles */
+    .blob-cursor-container {
+      position: fixed;
+      left: 0; top: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .blob-cursor {
+      position: absolute;
+      will-change: transform;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 32px 16px rgba(255,255,255,0.25), 0 0 64px 32px rgba(255,255,255,0.12);
+      opacity: 0.7;
+      mix-blend-mode: lighten;
+      transition: background 0.2s;
+      pointer-events: none;
+      filter: url(#blob);
+    }
+    .blob-cursor-1 {
+      width: 18px;
+      height: 18px;
+      filter: blur(1px);
+    }
+    .blob-cursor-2 {
+      width: 36px;
+      height: 36px;
+      opacity: 0.28;
+      filter: blur(3px);
+    }
+    .blob-cursor-3 {
+      width: 24px;
+      height: 24px;
+      opacity: 0.38;
+      filter: blur(2px);
+    }
+    /* 指南针样式 */
+    #compass-canvas {
+      position: fixed !important;
+      right: 40px !important;
+      bottom: 40px !important;
+      left: auto !important;
+      top: auto !important;
+      width: 160px;
+      height: 160px;
+      z-index: 3002;
+      cursor: pointer;
+      opacity: 0.92;
+      transition: box-shadow 0.2s;
+      box-shadow: 0 2px 16px 0 rgba(0,0,0,0.12);
+      background: none;
+      pointer-events: auto;
+      padding: 0;
+    }
+    #compass-canvas:hover {
+      box-shadow: 0 4px 32px 0 rgba(255,255,255,0.18);
+      opacity: 1;
+    }
+    #fade-mask {
+      position: fixed;
+      left: 0; top: 0;
+      width: 100vw; height: 100vh;
+      background: #000;
+      z-index: 3000;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    .side-nav {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      z-index: 3001;
+    }
+    .side-nav.left { left: 24px; }
+    .side-nav.right { right: 24px; }
+    .content-card {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 94vw;
+      height: 94vh;
+      background: rgba(18, 18, 18, 0.85);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2),
+                  inset 0 0 40px rgba(255, 255, 255, 0.05);
+      overflow: visible;
+      z-index: 1;
+    }
+    .grid-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+      gap: 1px;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .grid-cell {
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+    .grid-cell:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .grid-cell.active {
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    .nav-label {
+      font-family: 'Orbitron', 'Urbanist', 'Share Tech Mono', Arial, Helvetica, sans-serif;
+      font-weight: 300;
+      font-size: 1.08rem;
+      color: #fff;
+      background: none;
+      border: none;
+      border-radius: 0;
+      padding: 8px 0px;
+      min-width: 80px;
+      text-align: center;
+      letter-spacing: 0.13em;
+      margin: 0;
+      cursor: pointer;
+      box-shadow: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: visible;
+      user-select: none;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateZ(0);
+      z-index: 3002;
+    }
+    .nav-label .typewriter {
+      display: inline-block;
+      white-space: pre;
+      font-family: inherit;
+      font-weight: 300;
+    }
+    .nav-label:hover {
+      background: #fff;
+      color: #121212;
+      border: 2px solid #fff;
+      border-radius: 0;
+      box-shadow: 0 0 0 2px #fff;
+      animation: flicker 0.18s infinite alternate;
+      transform: translateZ(0) scale(1.1);
+      z-index: 10;
+    }
+    .side-nav.left .nav-label:hover {
+      transform: translateZ(0) scale(1.1) translateX(-20px);
+      box-shadow: 0 0 0 2px #fff,
+                  -20px 0 32px rgba(255, 255, 255, 0.2);
+    }
+    .side-nav.right .nav-label:hover {
+      transform: translateZ(0) scale(1.1) translateX(20px);
+      box-shadow: 0 0 0 2px #fff,
+                  20px 0 32px rgba(255, 255, 255, 0.2);
+    }
+    @keyframes flicker {
+      0% { filter: brightness(1) drop-shadow(0 0 2px #fff); }
+      100% { filter: brightness(1.3) drop-shadow(0 0 8px #fff); }
+    }
+    .nav-label .glitch {
+      position: absolute;
+      left: 0; top: 0; width: 100%; height: 100%;
+      color: #fff;
+      opacity: 0.18;
+      pointer-events: none;
+      animation: glitch 0.2s infinite alternate;
+      font-family: inherit;
+      font-weight: 300;
+    }
+    @keyframes glitch {
+      0% { transform: translate(0,0); }
+      20% { transform: translate(-1px,1px); }
+      40% { transform: translate(1px,-1px); }
+      60% { transform: translate(-2px,2px); }
+      80% { transform: translate(2px,-2px); }
+      100% { transform: translate(0,0); }
+    }
+    .mini-view {
+      position: fixed;
+      left: 32px;
+      top: 32px;
+      width: 180px;
+      height: 180px;
+      border-radius: 16px;
+      overflow: hidden;
+      z-index: 2000;
+      display: none;
+      background: rgba(18, 18, 18, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                  inset 0 0 32px rgba(255, 255, 255, 0.05);
+      transform: perspective(1000px) rotateX(10deg) rotateY(-10deg);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .mini-view:hover {
+      transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) scale(1.05);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4),
+                  inset 0 0 48px rgba(255, 255, 255, 0.08);
+    }
+    .mini-view canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .wonderland-modal {
+      position: fixed;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.32);
+      z-index: 4000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.4s;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .wonderland-card {
+      width: 540px; max-width: 92vw; height: 420px;
+      background: rgba(18,18,18,0.92);
+      border-radius: 24px;
+      border: 1.5px solid rgba(255,255,255,0.13);
+      box-shadow: 0 0 40px rgba(0,0,0,0.22), 0 0 0 2px #fff2;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .close-btn {
+      position: absolute; right: 18px; top: 18px;
+      background: none; border: none; color: #fff;
+      font-size: 2rem; cursor: pointer; z-index: 2;
+      opacity: 0.7; transition: opacity 0.2s;
+    }
+    .close-btn:hover { opacity: 1; }
+    .wonderland-scroll {
+      flex: 1;
+      display: flex;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      gap: 0;
+      height: 100%;
+    }
+    .wonderland-section {
+      min-width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff;
+      font-family: 'Urbanist', 'Orbitron', Arial, sans-serif;
+      padding: 32px;
+      box-sizing: border-box;
+      background: none;
+      transition: background 0.3s;
+    }
+    .wonderland-indicators {
+      position: absolute; bottom: 18px; left: 0; width: 100%;
+      display: flex; justify-content: center; gap: 12px;
+    }
+    .wonderland-indicators span {
+      display: inline-block; width: 12px; height: 12px;
+      border-radius: 50%; background: #fff3;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .wonderland-indicators span.active {
+      background: #fff;
+      box-shadow: 0 0 8px #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="content-card">
+    <div class="grid-background" id="grid-bg"></div>
+  <canvas id="bg"></canvas>
+    <canvas id="compass-canvas" width="160" height="160"></canvas>
+    <div id="fade-mask"></div>
+  <div class="top-right">
+    <button class="icon-btn" title="Undo">
+      <svg viewBox="0 0 24 24"><path d="M12 5v2a7 7 0 1 1-7 7H3a9 9 0 1 0 9-9z"/></svg>
+    </button>
+    <button class="icon-btn" title="Fullscreen" onclick="toggleFullscreen()">
+      <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm0-4h2V7h3V5H7v5zm10 10h-3v2h5v-5h-2v3zm0-14v2h3v3h2V5h-5z"/></svg>
+    </button>
+    </div>
+    <div class="blob-cursor-container">
+      <div class="blob-cursor blob-cursor-1" id="blob1"></div>
+      <div class="blob-cursor blob-cursor-2" id="blob2"></div>
+      <div class="blob-cursor blob-cursor-3" id="blob3"></div>
+    </div>
+    <div class="side-nav left">
+      <button class="nav-label"><span class="typewriter"></span><span class="glitch"></span></button>
+      <button class="nav-label"><span class="typewriter"></span><span class="glitch"></span></button>
+      <button class="nav-label"><span class="typewriter"></span><span class="glitch"></span></button>
+    </div>
+    <div class="side-nav right">
+      <button class="nav-label"><span class="typewriter"></span><span class="glitch"></span></button>
+      <button class="nav-label"><span class="typewriter"></span><span class="glitch"></span></button>
+      <button class="nav-label"><span class="typewriter"></span><span class="glitch"></span></button>
+    </div>
+    <canvas id="title-crown" width="1920" height="1080" style="position:fixed;left:0;top:0;width:100%;height:100%;z-index:2001;display:none;pointer-events:auto;"></canvas>
+  </div>
+  <div class="mini-view" id="mini-bg">
+    <canvas width="180" height="180"></canvas>
+  </div>
+  <div class="mini-view" id="mini-crown">
+    <canvas width="180" height="180"></canvas>
+  </div>
+  <svg style="position:absolute;width:0;height:0;">
+    <filter id="blob">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"/>
+    </filter>
+  </svg>
+  <!-- Wonderland Modal -->
+  <div class="wonderland-modal" id="wonderland-modal">
+    <div class="wonderland-card">
+      <button class="close-btn" id="close-wonderland">&times;</button>
+      <div class="wonderland-scroll" id="wonderland-scroll">
+        <section class="wonderland-section">🌌 Wonderland 窗口一<br>这里可以放介绍、图片或任何内容。</section>
+        <section class="wonderland-section">🪐 Wonderland 窗口二<br>支持自定义内容、图片、按钮等。</section>
+        <section class="wonderland-section">✨ Wonderland 窗口三<br>可用于展示更多信息或交互。</section>
+      </div>
+      <div class="wonderland-indicators" id="wonderland-indicators"></div>
+    </div>
+  </div>
+  <script>
+    // 新粒子系统参数
+    const canvas = document.getElementById('bg');
+    const ctx = canvas.getContext('2d');
+    let w = window.innerWidth, h = window.innerHeight;
+    canvas.width = w;
+    canvas.height = h;
+
+    const PARTICLE_COUNT = 3600;
+    const CENTER = { x: w/2, y: h/2 };
+    let baseRadiusMax = Math.min(w, h) * 0.28;
+    let baseRadius = baseRadiusMax * 0.7; // 初始缩小为70%
+    let baseRadiusInit = baseRadius;
+    let baseRadiusTarget = baseRadiusMax; // 页面加载时自动扩散到最大
+    let fadeMask = document.getElementById('fade-mask');
+    const particles = [];
+    const timeStart = Date.now();
+    // 球面均匀分布
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      // 采用球面均匀分布算法
+      const u = Math.random();
+      const v = Math.random();
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(2 * v - 1);
+      // 单位球坐标
+      const sx = Math.sin(phi) * Math.cos(theta);
+      const sy = Math.sin(phi) * Math.sin(theta);
+      const sz = Math.cos(phi);
+      particles.push({
+        sx, sy, sz,
+        alphaPhase: Math.random() * Math.PI * 2,
+        x: 0,
+        y: 0,
+        z: 0,
+        alpha: 1
+      });
+    }
+
+    let mouse = { x: w/2, y: h/2 };
+    let mouseDist = 0;
+    document.addEventListener('mousemove', e => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      // 鼠标距离中心，决定聚散
+      mouseDist = Math.sqrt((mouse.x - CENTER.x) ** 2 + (mouse.y - CENTER.y) ** 2) / (Math.min(w, h) / 2);
+    });
+
+    // 呼吸渐亮动画
+    function showFadeMask() {
+      fadeMask.style.opacity = 1;
+      fadeMask.style.transition = 'opacity 1.2s cubic-bezier(.4,0,.2,1)';
+      setTimeout(() => {
+        fadeMask.style.opacity = 0;
+      }, 80);
+      setTimeout(() => {
+        fadeMask.style.transition = '';
+      }, 1500);
+    }
+    showFadeMask();
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      const t = (Date.now() - timeStart) * 0.001;
+      // baseRadius平滑插值到目标值
+      baseRadius += (baseRadiusTarget - baseRadius) * 0.08;
+      // 聚散系数：鼠标越远越分散
+      let spread = 1 + mouseDist * 0.7 + 0.08 * Math.sin(t * 1.2);
+      // 球体旋转参数
+      const rotX = Math.PI / 8 + 0.12 * Math.sin(t * 0.3);
+      const rotY = t * 0.07;
+      // 粒子呼吸+扰动+三维球面投影
+      for (let p of particles) {
+        // 呼吸半径
+        const breath = 1 + 0.08 * Math.sin(t + p.alphaPhase);
+        const r = baseRadius * breath * spread;
+        // 球面坐标旋转
+        let x = p.sx * r;
+        let y = p.sy * r;
+        let z = p.sz * r;
+        // 绕X轴旋转
+        let y1 = y * Math.cos(rotX) - z * Math.sin(rotX);
+        let z1 = y * Math.sin(rotX) + z * Math.cos(rotX);
+        // 绕Y轴旋转
+        let x2 = x * Math.cos(rotY) - z1 * Math.sin(rotY);
+        let z2 = x * Math.sin(rotY) + z1 * Math.cos(rotY);
+        // 投影到2D
+        let scale = 600 / (600 + z2);
+        p.x = CENTER.x + x2 * scale;
+        p.y = CENTER.y + y1 * scale;
+        p.z = z2;
+        // 透明度呼吸
+        p.alpha = 0.5 + 0.5 * Math.sin(t * 1.2 + p.alphaPhase);
+      }
+      // 粒子粘连（只连近的，避免性能问题）
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const p1 = particles[i];
+        for (let j = i + 1; j < PARTICLE_COUNT; j++) {
+          const p2 = particles[j];
+          // 只连近的点
+          const dx = p1.x - p2.x, dy = p1.y - p2.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 32) {
+            ctx.save();
+            ctx.globalAlpha = 0.10 * (1 - dist / 32);
+            ctx.strokeStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      }
+      // 粒子本体
+      for (let p of particles) {
+        ctx.save();
+        // 透明度范围更大，最低更低，最高为白色
+        let alpha = 0.05 + 0.95 * p.alpha; // p.alpha ∈ [0,1]，最低0.05，最高1.0
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.1 + 1.2 * p.alpha, 0, 2 * Math.PI);
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 4 + 4 * p.alpha;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function animate() {
+      draw();
+      requestAnimationFrame(animate);
+    }
+    window.addEventListener('resize', () => {
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+      CENTER.x = w/2;
+      CENTER.y = h/2;
+      baseRadiusMax = Math.min(w, h) * 0.28;
+      baseRadius = baseRadiusMax * 0.7; // 初始缩小为70%
+      baseRadiusInit = baseRadius;
+      baseRadiusTarget = baseRadiusMax;
+    });
+    animate();
+
+    // 全屏切换
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    window.toggleFullscreen = toggleFullscreen;
+
+    // Blob Cursor 动画（更缓慢流体感+同步呼吸聚散）
+    const blob1 = document.getElementById('blob1');
+    const blob2 = document.getElementById('blob2');
+    const blob3 = document.getElementById('blob3');
+
+    // 鼠标blob同步呼吸聚散
+    let blobs = [
+      { el: blob1, x: mouse.x, y: mouse.y, vx: 0, vy: 0, spring: 0.12, friction: 0.82, base: 9 },
+      { el: blob2, x: mouse.x, y: mouse.y, vx: 0, vy: 0, spring: 0.07, friction: 0.86, base: 18 },
+      { el: blob3, x: mouse.x, y: mouse.y, vx: 0, vy: 0, spring: 0.09, friction: 0.84, base: 12 }
+    ];
+    function animateBlob() {
+      const t = (Date.now() - timeStart) * 0.001;
+      let spread = 1 + mouseDist * 0.7 + 0.08 * Math.sin(t * 1.2);
+      let target = mouse;
+      blobs.forEach((b, i) => {
+        // 弹性物理
+        b.vx += (target.x - b.x) * b.spring;
+        b.vy += (target.y - b.y) * b.spring;
+        b.vx *= b.friction;
+        b.vy *= b.friction;
+        b.x += b.vx;
+        b.y += b.vy;
+        // 同步呼吸聚散缩放
+        let scale = spread * (1 + 0.08 * Math.sin(t + i));
+        b.el.style.transform = `translate3d(${b.x - b.base * scale}px,${b.y - b.base * scale}px,0) scale(${scale})`;
+        // 下一个blob的目标是上一个blob
+        target = b;
+      });
+      requestAnimationFrame(animateBlob);
+    }
+    animateBlob();
+
+    // 指南针canvas
+    const compass = document.getElementById('compass-canvas');
+    const ctxCompass = compass.getContext('2d');
+    let compassAngle = 0;
+    document.addEventListener('mousemove', e => {
+      // 鼠标相对中心的角度
+      const dx = e.clientX - CENTER.x;
+      const dy = e.clientY - CENTER.y;
+      compassAngle = Math.atan2(dy, dx);
+    });
+    function drawCompass() {
+      ctxCompass.clearRect(0, 0, 160, 160);
+      ctxCompass.save();
+      ctxCompass.translate(80, 80);
+      ctxCompass.rotate(compassAngle + Math.sin(Date.now()*0.001)*0.1);
+      // 外圈
+      ctxCompass.strokeStyle = '#fff';
+      ctxCompass.lineWidth = 0.8;
+      ctxCompass.beginPath();
+      ctxCompass.arc(0, 0, 56, 0, 2 * Math.PI);
+      ctxCompass.stroke();
+      // 8向风向线
+      ctxCompass.lineWidth = 0.5;
+      for(let i=0;i<8;i++){
+        ctxCompass.save();
+        ctxCompass.rotate(i*Math.PI/4);
+        ctxCompass.beginPath();
+        ctxCompass.moveTo(0,0);
+        ctxCompass.lineTo(0,-44);
+        ctxCompass.stroke();
+        ctxCompass.restore();
+      }
+      // 主南北指针（红黑渐变）
+      // 北（红）
+      ctxCompass.save();
+      ctxCompass.rotate(0);
+      let gradN = ctxCompass.createLinearGradient(0,-44,0,0);
+      gradN.addColorStop(0,"#fff");
+      gradN.addColorStop(1,"#e44");
+      ctxCompass.fillStyle = gradN;
+      ctxCompass.beginPath();
+      ctxCompass.moveTo(0,-52);
+      ctxCompass.lineTo(8,0);
+      ctxCompass.lineTo(-8,0);
+      ctxCompass.closePath();
+      ctxCompass.fill();
+      ctxCompass.restore();
+      // 南（黑）
+      ctxCompass.save();
+      ctxCompass.rotate(Math.PI);
+      ctxCompass.fillStyle = "#222";
+      ctxCompass.beginPath();
+      ctxCompass.moveTo(0,-44);
+      ctxCompass.lineTo(6,0);
+      ctxCompass.lineTo(-6,0);
+      ctxCompass.closePath();
+      ctxCompass.fill();
+      ctxCompass.restore();
+      // 细刻度
+      ctxCompass.strokeStyle = '#fff';
+      ctxCompass.lineWidth = 0.3;
+      for(let i=0;i<72;i++){
+        ctxCompass.save();
+        ctxCompass.rotate(i*Math.PI/36);
+        ctxCompass.beginPath();
+        ctxCompass.moveTo(0,-56);
+        ctxCompass.lineTo(0,-60);
+        ctxCompass.stroke();
+        ctxCompass.restore();
+      }
+      // 方向字母
+      ctxCompass.font = 'bold 13px Arial';
+      ctxCompass.fillStyle = '#fff';
+      ctxCompass.textAlign = 'center';
+      ctxCompass.textBaseline = 'middle';
+      ctxCompass.fillText('N', 0, -70);
+      ctxCompass.fillText('S', 0, 70);
+      ctxCompass.fillText('E', 70, 0);
+      ctxCompass.fillText('W', -70, 0);
+      ctxCompass.restore();
+      requestAnimationFrame(drawCompass);
+    }
+    drawCompass();
+    // 指南针点击事件
+    compass.addEventListener('click',()=>{
+      baseRadiusTarget = baseRadiusMax;
+      showFadeMask();
+    });
+
+    // 打字机和像素故障效果
+    function typewriterEffect(el, text, glitchEl) {
+      let i = 0;
+      function type() {
+        el.textContent = text.slice(0, i);
+        if (i < text.length) {
+          i++;
+          setTimeout(type, 60 + Math.random()*40);
+        }
+      }
+      type();
+      // 故障闪烁
+      if (glitchEl) {
+        glitchEl.textContent = text;
+      }
+    }
+    function resetTypewriter(el, text, glitchEl) {
+      el.textContent = '';
+      setTimeout(()=>typewriterEffect(el, text, glitchEl), 80);
+    }
+    const navLabels = [
+      'Wonderland',
+      'Cosmos',
+      'Typewriter',
+      'Scanner',
+      'Matrix',
+      'Anonymous'
+    ];
+    document.querySelectorAll('.nav-label').forEach((btn, idx) => {
+      const typeEl = btn.querySelector('.typewriter');
+      const glitchEl = btn.querySelector('.glitch');
+      const label = navLabels[idx] || 'Sample';
+      typewriterEffect(typeEl, label, glitchEl);
+      btn.addEventListener('mouseenter', () => {
+        btn.classList.add('hovered');
+        resetTypewriter(typeEl, label, glitchEl);
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.classList.remove('hovered');
+        typeEl.textContent = label;
+      });
+      // 新增：点击Typewriter跳转
+      if(label.toLowerCase()==='typewriter'){
+        btn.addEventListener('click',()=>{
+          window.location.href = 'typewriter.html';
+        });
+      }
+      // 新增：点击Anonymous跳转
+      if(label.toLowerCase()==='anonymous'){
+        btn.addEventListener('click',()=>{
+          window.location.href = 'anonymous.html';
+        });
+      }
+      // 新增：点击Matrix跳转
+      if(label.toLowerCase()==='matrix'){
+        btn.addEventListener('click',()=>{
+          window.location.href = 'matrix.html';
+        });
+      }
+      // 新增：点击Cosmos跳转
+      if(label.toLowerCase()==='cosmos'){
+        btn.addEventListener('click',()=>{
+          window.location.href = 'cosmos.html';
+        });
+      }
+      // 新增：点击Scanner跳转
+      if(label.toLowerCase()==='scanner'){
+        btn.addEventListener('click',()=>{
+          window.location.href = 'scanner.html';
+        });
+      }
+    });
+
+    // --- Crown Title Canvas ---
+    const titleCanvas = document.getElementById('title-crown');
+    const ctxTitle = titleCanvas.getContext('2d');
+    function resizeTitleCanvas() {
+      titleCanvas.width = window.innerWidth;
+      titleCanvas.height = window.innerHeight;
+    }
+    resizeTitleCanvas();
+    window.addEventListener('resize', resizeTitleCanvas);
+    // 标题参数
+    const TITLE = 'POST-HUMAN-BAZAAR';
+    const RINGS = 3;
+    const RING_RADII = [0.18, 0.23, 0.28]; // 相对屏幕短边
+    const RING_OFFSETS = [-60, 0, 60]; // 垂直错位
+    const RING_ROT_SPEED = [0.18, -0.12, 0.09]; // 顺逆时针交错
+    let ringAngles = [0, 0, 0];
+    let drag = false, lastX = 0, lastY = 0, dragDX = 0, dragDY = 0;
+    let viewRotX = 0, viewRotY = 0;
+    // 鼠标拖拽旋转
+    titleCanvas.addEventListener('mousedown', e => { drag = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('mousemove', e => {
+      if (drag) {
+        dragDX += (e.clientX - lastX) * 0.008;
+        dragDY += (e.clientY - lastY) * 0.008;
+        lastX = e.clientX; lastY = e.clientY;
+      }
+    });
+    window.addEventListener('mouseup', () => { drag = false; });
+    // 绘制Crown标题
+    function drawCrownTitle() {
+      ctxTitle.clearRect(0, 0, titleCanvas.width, titleCanvas.height);
+      const w = titleCanvas.width, h = titleCanvas.height;
+      const cx = w/2, cy = h/2;
+      // 视角插值
+      viewRotX += (dragDY - viewRotX) * 0.12;
+      viewRotY += (dragDX - viewRotY) * 0.12;
+      // 环动画
+      for(let i=0;i<RINGS;i++) ringAngles[i] += RING_ROT_SPEED[i];
+      for(let r=0;r<RINGS;r++){
+        const chars = TITLE.split('');
+        const N = chars.length;
+        const radius = Math.min(w,h) * RING_RADII[r];
+        const yOffset = RING_OFFSETS[r];
+        const angle0 = ringAngles[r];
+        for(let i=0;i<N;i++){
+          const a = angle0 + i * (2*Math.PI/N);
+          // 3D环坐标
+          let x = Math.cos(a) * radius;
+          let y = Math.sin(a) * radius;
+          let z = 0;
+          // 视角旋转
+          let y1 = y * Math.cos(viewRotX) - z * Math.sin(viewRotX);
+          let z1 = y * Math.sin(viewRotX) + z * Math.cos(viewRotX);
+          let x2 = x * Math.cos(viewRotY) - z1 * Math.sin(viewRotY);
+          let z2 = x * Math.sin(viewRotY) + z1 * Math.cos(viewRotY);
+          // 投影
+          let scale = 1.2 + 0.7 * (z2/radius);
+          let px = cx + x2 * scale;
+          let py = cy + y1 * scale + yOffset;
+          // 透明度随深度
+          let alpha = 0.25 + 0.75 * (0.5 + 0.5 * (z2/radius));
+          ctxTitle.save();
+          ctxTitle.globalAlpha = alpha;
+          ctxTitle.font = `${38 + 22*r*scale}px 'Orbitron', 'Share Tech Mono', Arial`;
+          ctxTitle.textAlign = 'center';
+          ctxTitle.textBaseline = 'middle';
+          ctxTitle.shadowColor = '#fff';
+          ctxTitle.shadowBlur = 12 + 8*r*scale;
+          ctxTitle.fillStyle = '#fff';
+          ctxTitle.fillText(chars[i], px, py);
+          ctxTitle.restore();
+        }
+      }
+    }
+    // --- 切换与黑场 ---
+    let showCrown = false;
+    let fade = 0;
+    let fadeDir = 1;
+    let isTransitioning = false;
+    const miniBg = document.getElementById('mini-bg');
+    const miniCrown = document.getElementById('mini-crown');
+    miniBg.style.display = 'none';
+    miniCrown.style.display = 'block';
+
+    function setCrownMode(on) {
+      if(isTransitioning) return;
+      isTransitioning = true;
+      fadeDir = 1;
+      if(on) {
+        miniBg.style.display = 'block';
+        miniCrown.style.display = 'none';
+      } else {
+        miniBg.style.display = 'none';
+        miniCrown.style.display = 'block';
+      }
+      setTimeout(()=>{
+        showCrown = on;
+        fadeDir = -1;
+        setTimeout(()=>{
+          isTransitioning = false;
+        }, 600);
+      }, 600);
+    }
+
+    // mini-view 动画函数不再自调用 requestAnimationFrame，由主循环调度
+    function drawMiniParticles() {
+      const canvas = miniBg.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      const w = 180, h = 180;
+      ctx.clearRect(0, 0, w, h);
+      const t = Date.now() * 0.001;
+      const center = {x: w/2, y: h/2};
+      const radius = 45;
+      for(let i = 0; i < 120; i++) {
+        const angle = t * 0.5 + i * 0.1;
+        const x = center.x + Math.cos(angle) * radius;
+        const y = center.y + Math.sin(angle) * radius;
+        const alpha = 0.3 + 0.7 * Math.sin(t + i);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 4;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    function drawMiniCrown() {
+      const canvas = miniCrown.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      const w = 180, h = 180;
+      ctx.clearRect(0, 0, w, h);
+      const t = Date.now() * 0.001;
+      const center = {x: w/2, y: h/2};
+      for(let r = 0; r < 3; r++) {
+        const radius = 35 + r * 12;
+        const angle = t * (0.2 + r * 0.1);
+        const chars = TITLE.split('');
+        for(let i = 0; i < chars.length; i++) {
+          const a = angle + i * (Math.PI * 2 / chars.length);
+          const x = center.x + Math.cos(a) * radius;
+          const y = center.y + Math.sin(a) * radius;
+          ctx.save();
+          ctx.globalAlpha = 0.3 + 0.7 * Math.sin(t + i);
+          ctx.font = '10px Orbitron';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#fff';
+          ctx.shadowColor = '#fff';
+          ctx.shadowBlur = 4;
+          ctx.fillText(chars[i], x, y);
+          ctx.restore();
+        }
+      }
+    }
+    // mini-view 切换事件
+    miniBg.addEventListener('click', () => {
+      if(!isTransitioning) setCrownMode(true);
+    });
+    miniCrown.addEventListener('click', () => {
+      if(!isTransitioning) setCrownMode(false);
+    });
+    // 自动切换
+    setInterval(() => {
+      if(!isTransitioning) {
+        setCrownMode(!showCrown);
+      }
+    }, 10000);
+
+    // 网格动画健壮性处理
+    const gridBg = document.getElementById('grid-bg');
+    const gridSize = 40;
+    let activeCells = new Set();
+    let mouseX = 0, mouseY = 0;
+    function createGrid() {
+      const width = gridBg.clientWidth;
+      const height = gridBg.clientHeight;
+      const cols = Math.ceil(width / gridSize);
+      const rows = Math.ceil(height / gridSize);
+      gridBg.innerHTML = '';
+      for(let i = 0; i < cols * rows; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell';
+        gridBg.appendChild(cell);
+      }
+    }
+    function updateGrid() {
+      const cells = gridBg.getElementsByClassName('grid-cell');
+      const cols = Math.ceil(gridBg.clientWidth / gridSize);
+      // 清除旧的激活状态
+      activeCells.forEach(index => {
+        if(cells[index]) cells[index].classList.remove('active');
+      });
+      activeCells.clear();
+      // 计算鼠标所在的网格位置
+      const mouseCol = Math.floor(mouseX / gridSize);
+      const mouseRow = Math.floor(mouseY / gridSize);
+      // 激活鼠标周围的网格
+      for(let i = -2; i <= 2; i++) {
+        for(let j = -2; j <= 2; j++) {
+          const col = mouseCol + i;
+          const row = mouseRow + j;
+          if(col >= 0 && col < cols && row >= 0) {
+            const index = col + row * cols;
+            if(cells[index]) {
+              const distance = Math.sqrt(i*i + j*j);
+              if(distance <= 2) {
+                cells[index].classList.add('active');
+                activeCells.add(index);
+              }
+            }
+          }
+        }
+      }
+    }
+    document.addEventListener('mousemove', (e) => {
+      const rect = gridBg.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+    window.addEventListener('resize', () => {
+      createGrid();
+    });
+    createGrid();
+
+    // 统一主动画循环
+    function mainLoop() {
+      // 主粒子 or crown
+      if (showCrown) {
+        titleCanvas.style.display = 'block';
+        canvas.style.display = 'none';
+        drawCrownTitle();
+      } else {
+        titleCanvas.style.display = 'none';
+        canvas.style.display = 'block';
+        draw();
+      }
+      // mini-view 动画
+      if (miniBg.style.display !== 'none') drawMiniParticles();
+      if (miniCrown.style.display !== 'none') drawMiniCrown();
+      // 网格动画
+      updateGrid();
+      // 黑场渐变
+      fade += fadeDir * 0.02;
+      if (fade > 1) fade = 1;
+      if (fade < 0) fade = 0;
+      document.body.style.backgroundColor = `rgba(0, 0, 0, ${fade})`;
+      requestAnimationFrame(mainLoop);
+    }
+    mainLoop();
+
+    // Wonderland 弹窗逻辑
+    const wonderlandModal = document.getElementById('wonderland-modal');
+    const closeWonderland = document.getElementById('close-wonderland');
+    const wonderlandScroll = document.getElementById('wonderland-scroll');
+    const indicators = document.getElementById('wonderland-indicators');
+    const sections = wonderlandScroll.querySelectorAll('.wonderland-section');
+    // 生成指示器
+    indicators.innerHTML = '';
+    for(let i=0;i<sections.length;i++){
+      const dot = document.createElement('span');
+      if(i===0) dot.classList.add('active');
+      dot.addEventListener('click',()=>wonderlandScroll.scrollTo({left: i*wonderlandScroll.clientWidth, behavior:'smooth'}));
+      indicators.appendChild(dot);
+    }
+    // 滚动时高亮指示器
+    wonderlandScroll.addEventListener('scroll',()=>{
+      const idx = Math.round(wonderlandScroll.scrollLeft / wonderlandScroll.clientWidth);
+      indicators.querySelectorAll('span').forEach((dot,i)=>dot.classList.toggle('active',i===idx));
+    });
+    // 关闭
+    closeWonderland.addEventListener('click',()=>wonderlandModal.style.display='none');
+    // 打开（左侧Wonderland标签点击事件）
+    document.querySelectorAll('.side-nav.left .nav-label').forEach(btn=>{
+      if(btn.textContent.trim().toLowerCase().includes('wonderland')){
+        btn.addEventListener('click',()=>{
+          window.location.href = 'wonderland.html';
+        });
+      }
+    });
+  </script>
+</body>
+</html>

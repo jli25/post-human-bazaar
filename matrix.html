@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Matrix - Post-Human Bazaar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 字体与主站一致 -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #121212;
+      overflow: hidden;
+      font-family: 'Urbanist', 'Montserrat', Arial, Helvetica, sans-serif;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .content-card {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 94vw;
+      height: 94vh;
+      background: rgba(18, 18, 18, 0.85);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2),
+                  inset 0 0 40px rgba(255, 255, 255, 0.05);
+      overflow: visible;
+      z-index: 1;
+    }
+    .grid-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+      gap: 1px;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .grid-cell {
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+    .grid-cell.active {
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    /* minicanvas 返回按钮 */
+    .mini-view {
+      position: fixed;
+      left: 32px;
+      top: 32px;
+      width: 180px;
+      height: 180px;
+      border-radius: 16px;
+      background: rgba(18, 18, 18, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                  inset 0 0 32px rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      transition: background 0.25s, box-shadow 0.25s;
+      overflow: hidden;
+    }
+    .mini-view:hover {
+      background: #fff;
+      box-shadow: 0 0 0 2px #fff, 0 0 64px 0 #fff, 0 2px 32px 0 rgba(255,255,255,0.18);
+    }
+    #mini-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      margin: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+    #back-arrow {
+      position: absolute;
+      left: 74px;
+      top: 74px;
+      width: 32px;
+      height: 32px;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+    }
+    .mini-view:hover #back-arrow {
+      opacity: 1;
+    }
+    /* 摩尔纹预览容器 */
+    .moire-preview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .moire-preview iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .matrix-title {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Orbitron', 'Urbanist', Arial, sans-serif;
+      font-size: 3.2rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: #fff;
+      text-shadow: 0 2px 24px #0ff8, 0 0 8px #fff;
+      z-index: 10;
+      pointer-events: none;
+      user-select: none;
+    }
+    .sticky-scroll-card {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80vw;
+      height: 80vh;
+      background: rgba(18, 18, 18, 0.85);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2),
+                  inset 0 0 40px rgba(255, 255, 255, 0.05);
+      overflow: auto;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .sticky-scroll-card:hover {
+      opacity: 1;
+    }
+    .sticky-scroll-content {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      align-items: center;
+      padding: 20px;
+    }
+    .sticky-scroll-image {
+      width: 45%;
+      height: auto;
+      margin: 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    /* 你可以在此添加更多matrix专属样式 */
+  </style>
+</head>
+<body>
+  <div class="content-card">
+    <div class="grid-background" id="grid-bg"></div>
+    <div class="matrix-title">MATRIX</div>
+    <div class="moire-preview">
+      <iframe src="https://moire.constraint.systems/" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+  </div>
+  <div class="sticky-scroll-card">
+    <div class="sticky-scroll-content">
+      <img src="images/matrix/1.png" alt="Matrix Image 1" class="sticky-scroll-image">
+      <img src="images/matrix/2.png" alt="Matrix Image 2" class="sticky-scroll-image">
+      <img src="images/matrix/3.png" alt="Matrix Image 3" class="sticky-scroll-image">
+      <img src="images/matrix/4.png" alt="Matrix Image 4" class="sticky-scroll-image">
+    </div>
+  </div>
+  <div class="second-card">
+    <div class="spline-container">
+      <spline-viewer url="https://prod.spline.design/5ScYlLwiRdloq7BS/scene.splinecode" events-target="global" disable-scroll="true"></spline-viewer>
+    </div>
+  </div>
+  <div class="mini-view" id="mini-bg">
+    <canvas id="mini-canvas" width="180" height="180"></canvas>
+    <svg id="back-arrow" viewBox="0 0 32 32"><path d="M20 8l-8 8 8 8" stroke="#121212" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div id="spline-modal" style="
+    display:none;
+    position:fixed;
+    left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    z-index:1000;
+    background:rgba(255,255,255,0.98);
+    border-radius:18px;
+    box-shadow:0 8px 48px rgba(0,0,0,0.28);
+    padding:0;
+    width:420px; height:320px;
+    align-items:center; justify-content:center;
+    overflow:hidden;
+  ">
+    <spline-viewer id="spline-viewer" url="https://prod.spline.design/5ScYlLwiRdloq7BS/scene.splinecode" style="width:100%;height:100%;border:none;"></spline-viewer>
+  </div>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.96/build/spline-viewer.js"></script>
+  <script>
+    // 网格系统
+    const gridBg = document.getElementById('grid-bg');
+    const gridSize = 40;
+    let activeCells = new Set();
+    let mouseX = 0, mouseY = 0;
+    function createGrid() {
+      const width = gridBg.clientWidth;
+      const height = gridBg.clientHeight;
+      const cols = Math.ceil(width / gridSize);
+      const rows = Math.ceil(height / gridSize);
+      gridBg.innerHTML = '';
+      for(let i = 0; i < cols * rows; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell';
+        gridBg.appendChild(cell);
+      }
+    }
+    function updateGrid() {
+      const cells = gridBg.getElementsByClassName('grid-cell');
+      const cols = Math.ceil(gridBg.clientWidth / gridSize);
+      // 清除旧的激活状态
+      activeCells.forEach(index => {
+        if(cells[index]) cells[index].classList.remove('active');
+      });
+      activeCells.clear();
+      // 计算鼠标所在的网格位置
+      const mouseCol = Math.floor(mouseX / gridSize);
+      const mouseRow = Math.floor(mouseY / gridSize);
+      // 激活鼠标周围的网格
+      for(let i = -2; i <= 2; i++) {
+        for(let j = -2; j <= 2; j++) {
+          const col = mouseCol + i;
+          const row = mouseRow + j;
+          if(col >= 0 && col < cols && row >= 0) {
+            const index = col + row * cols;
+            if(cells[index]) {
+              const distance = Math.sqrt(i*i + j*j);
+              if(distance <= 2) {
+                cells[index].classList.add('active');
+                activeCells.add(index);
+              }
+            }
+          }
+        }
+      }
+    }
+    document.addEventListener('mousemove', (e) => {
+      const rect = gridBg.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+    window.addEventListener('resize', createGrid);
+    createGrid();
+
+    // 动画循环
+    function mainLoop() {
+      updateGrid();
+      requestAnimationFrame(mainLoop);
+    }
+    mainLoop();
+
+    // minicanvas 返回按钮
+    const miniBg = document.getElementById('mini-bg');
+    const miniCanvas = document.getElementById('mini-canvas');
+    const ctxCrown = miniCanvas.getContext('2d');
+    const TITLE = 'POST-HUMAN-BAZAAR';
+    function drawMiniCrown() {
+      const w = 180, h = 180;
+      ctxCrown.clearRect(0, 0, w, h);
+      const t = Date.now() * 0.001;
+      const center = {x: w/2, y: h/2};
+      const baseR = 35;
+      const dr = 12;
+      const fontBase = 10;
+      for(let r = 0; r < 3; r++) {
+        const radius = baseR + r * dr;
+        const angle = t * (0.2 + r * 0.1);
+        const chars = TITLE.split('');
+        for(let i = 0; i < chars.length; i++) {
+          const a = angle + i * (Math.PI * 2 / chars.length);
+          const x = center.x + Math.cos(a) * radius;
+          const y = center.y + Math.sin(a) * radius;
+          ctxCrown.save();
+          ctxCrown.globalAlpha = 0.3 + 0.7 * Math.sin(t + i);
+          ctxCrown.font = `${fontBase + 2*r}px Orbitron`;
+          ctxCrown.textAlign = 'center';
+          ctxCrown.textBaseline = 'middle';
+          ctxCrown.fillStyle = '#fff';
+          ctxCrown.shadowColor = '#fff';
+          ctxCrown.shadowBlur = 6;
+          ctxCrown.fillText(chars[i], x, y);
+          ctxCrown.restore();
+        }
+      }
+      requestAnimationFrame(drawMiniCrown);
+    }
+    drawMiniCrown();
+    miniBg.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    // 3D星座折线模型
+    const constellationCanvas = document.getElementById('constellation-canvas');
+    const cctx = constellationCanvas.getContext('2d');
+    let cw = constellationCanvas.width = constellationCanvas.offsetWidth;
+    let ch = constellationCanvas.height = constellationCanvas.offsetHeight;
+    function resizeConstellationCanvas() {
+      cw = constellationCanvas.width = constellationCanvas.offsetWidth;
+      ch = constellationCanvas.height = constellationCanvas.offsetHeight;
+    }
+    window.addEventListener('resize', resizeConstellationCanvas);
+    resizeConstellationCanvas();
+
+    const STAR_LABELS = ['one','two','three','four','five','six','seven'];
+    // 更"摊开"的折线点位
+    const star3D = [
+      {x: -0.45, y: 0.18, z: -0.18},
+      {x: -0.28, y: 0.05, z: 0.12},
+      {x: -0.12, y: -0.08, z: 0.22},
+      {x: 0.08, y: -0.18, z: 0.18},
+      {x: 0.22, y: -0.12, z: 0.05},
+      {x: 0.38, y: 0.04, z: -0.08},
+      {x: 0.52, y: 0.18, z: -0.22}
+    ];
+    const starLinks = [
+      [0,1],[1,2],[2,3],[3,4],[4,5],[5,6]
+    ];
+
+    let hoverIdx = -1;
+    let labelAnim = Array(star3D.length).fill(0); // 0~1，hover动画进度
+    let typewriterProgress = Array(star3D.length).fill(0); // 打字机进度
+
+    // 3D旋转参数
+    let rotY = 0, rotX = 0;
+    let dragging = false, lastX = 0, lastY = 0;
+    const RADIUS_BASE = 0.85; // 放大3倍以上
+    function getRadius() {
+      return Math.min(cw, ch) * RADIUS_BASE;
+    }
+
+    const project3D = (p) => {
+      let y1 = p.y * Math.cos(rotX) - p.z * Math.sin(rotX);
+      let z1 = p.y * Math.sin(rotX) + p.z * Math.cos(rotX);
+      let x2 = p.x * Math.cos(rotY) - z1 * Math.sin(rotY);
+      let z2 = p.x * Math.sin(rotY) + z1 * Math.cos(rotY);
+      let scale = 1.1 + 0.7 * (z2);
+      return {
+        x: cw/2 + x2 * getRadius() * scale,
+        y: ch/2 + y1 * getRadius() * scale,
+        z: z2
+      };
+    };
+
+    // 鼠标交互
+    constellationCanvas.addEventListener('mousedown', e => {
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    window.addEventListener('mousemove', e => {
+      if (dragging) {
+        rotY += (e.clientX - lastX) * 0.012;
+        rotX += (e.clientY - lastY) * 0.012;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      }
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    constellationCanvas.addEventListener('mousemove', e => {
+      let rect = constellationCanvas.getBoundingClientRect();
+      let mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      hoverIdx = -1;
+      for(let i=0;i<star3D.length;i++){
+        let p = project3D(star3D[i]);
+        let d = Math.sqrt((mx-p.x)**2 + (my-p.y)**2);
+        if(d < 32) { hoverIdx = i; break; }
+      }
+    });
+    constellationCanvas.addEventListener('mouseleave', ()=>{hoverIdx=-1;});
+
+    function drawGlitchText(ctx, text, x, y, font, color, progress, weight, hovered) {
+      // progress: 0~1，打字机进度
+      let len = Math.ceil(text.length * progress);
+      let showText = text.slice(0, len);
+      ctx.save();
+      ctx.font = `${weight} ${font}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // glitch: 多层错位
+      if (hovered) {
+        for(let i=0;i<3;i++){
+          let dx = (Math.random()-0.5)*2.5;
+          let dy = (Math.random()-0.5)*2.5;
+          ctx.globalAlpha = 0.18;
+          ctx.fillStyle = i===0 ? "#000" : "#222";
+          ctx.fillText(showText, x+dx, y+dy);
+        }
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = color;
+      ctx.fillText(showText, x, y);
+      ctx.restore();
+    }
+
+    function drawConstellation() {
+      cctx.clearRect(0,0,cw,ch);
+      // 线
+      cctx.save();
+      cctx.strokeStyle = '#fff';
+      cctx.globalAlpha = 0.22;
+      cctx.lineWidth = 2.2;
+      for(let [a,b] of starLinks){
+        let pa = project3D(star3D[a]);
+        let pb = project3D(star3D[b]);
+        cctx.beginPath();
+        cctx.moveTo(pa.x, pa.y);
+        cctx.lineTo(pb.x, pb.y);
+        cctx.stroke();
+      }
+      cctx.restore();
+
+      // 星辰与标签
+      for(let i=0;i<star3D.length;i++){
+        let p = project3D(star3D[i]);
+        // hover动画进度
+        if(hoverIdx===i) {
+          labelAnim[i] += (1-labelAnim[i])*0.18;
+          typewriterProgress[i] += 0.08;
+          if(typewriterProgress[i]>1) typewriterProgress[i]=1;
+        } else {
+          labelAnim[i] += (0-labelAnim[i])*0.18;
+          typewriterProgress[i] = 0;
+        }
+        if(labelAnim[i]<0.01) labelAnim[i]=0;
+        if(labelAnim[i]>0.99) labelAnim[i]=1;
+
+        // 星辰
+        let glow = 0.5+0.5*Math.sin(Date.now()*0.002+i);
+        cctx.save();
+        cctx.beginPath();
+        cctx.arc(p.x, p.y, 18+18*labelAnim[i], 0, 2*Math.PI);
+        cctx.globalAlpha = 0.7*glow + 0.3*labelAnim[i];
+        cctx.fillStyle = '#fff';
+        cctx.shadowColor = '#fff';
+        cctx.shadowBlur = 12+28*labelAnim[i];
+        cctx.fill();
+        cctx.restore();
+
+        // 标签
+        if(labelAnim[i]>0.01){
+          let label = STAR_LABELS[i];
+          let scale = 1 + 0.22*labelAnim[i];
+          let yOffset = -54 - 24*labelAnim[i];
+          // index.html页签参数
+          let fontSize = 17 * scale; // 1.08rem
+          let fontWeight = hoverIdx===i ? 700 : 300;
+          let fontFamily = "Urbanist, 'Share Tech Mono', Arial, sans-serif";
+          let padX = 32*scale, padY = 12*scale;
+          let minW = 80*scale, minH = 40*scale;
+          let textFont = `${fontSize}px ${fontFamily}`;
+          cctx.save();
+          // 计算文本宽度
+          cctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+          let textW = cctx.measureText(label).width;
+          let boxW = Math.max(textW + padX*2, minW), boxH = minH;
+          // 白底矩形（无圆角）
+          cctx.globalAlpha = 0.98;
+          cctx.fillStyle = "#fff";
+          cctx.shadowColor = "#000";
+          cctx.shadowBlur = 10*labelAnim[i];
+          cctx.fillRect(p.x-boxW/2, p.y+yOffset-boxH/2, boxW, boxH);
+          cctx.shadowBlur = 0;
+          // 黑色描边
+          cctx.globalAlpha = 0.18+0.22*labelAnim[i];
+          cctx.strokeStyle = "#000";
+          cctx.lineWidth = 2;
+          cctx.strokeRect(p.x-boxW/2, p.y+yOffset-boxH/2, boxW, boxH);
+          cctx.restore();
+
+          // glitch打字机黑字
+          drawGlitchText(
+            cctx,
+            label,
+            p.x,
+            p.y+yOffset,
+            `${fontSize}px ${fontFamily}`,
+            "#111",
+            typewriterProgress[i],
+            fontWeight,
+            hoverIdx===i
+          );
+        }
+      }
+      requestAnimationFrame(drawConstellation);
+    }
+    drawConstellation();
+
+    // Spline弹窗控制
+    const splineModal = document.getElementById('spline-modal');
+    let splineModalVisible = false;
+    let splineModalTimer = null;
+
+    function updateSplineModal() {
+      if (hoverIdx !== -1) {
+        if (!splineModalVisible) {
+          splineModal.style.display = 'flex';
+          splineModalVisible = true;
+        }
+        // 保持弹窗
+        if (splineModalTimer) clearTimeout(splineModalTimer);
+      } else {
+        // 延迟消失，防止闪烁
+        if (splineModalVisible && !splineModalTimer) {
+          splineModalTimer = setTimeout(()=>{
+            splineModal.style.display = 'none';
+            splineModalVisible = false;
+            splineModalTimer = null;
+          }, 120); // 120ms延迟
+        }
+      }
+    }
+
+    // 在drawConstellation()最后一行前加：
+    updateSplineModal();
+  </script>
+</body>
+</html>

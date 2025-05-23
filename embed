@@ -1,0 +1,172 @@
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.96/build/spline-viewer.js"></script>
+<spline-viewer url="https://prod.spline.design/J8iUNVBbFuJVtf7e/scene.splinecode"></spline-viewer>
+
+心脏
+
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.96/build/spline-viewer.js"></script>
+<spline-viewer url="https://prod.spline.design/JhKkhtRCsIEFS84q/scene.splinecode"></spline-viewer>
+粒子
+
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.96/build/spline-viewer.js"></script>
+<spline-viewer url="https://prod.spline.design/w44KuL9CGoHV15o1/scene.splinecode"></spline-viewer>
+团子
+
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.96/build/spline-viewer.js"></script>
+<spline-viewer url="https://prod.spline.design/5ScYlLwiRdloq7BS/scene.splinecode"></spline-viewer>
+手
+
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.96/build/spline-viewer.js"></script>
+<spline-viewer url="https://prod.spline.design/vZB6cfjH4qq8pQ0r/scene.splinecode"></spline-viewer>、
+星图
+landscape
+
+    // 文字河流效果（第四张卡片）
+    const riverQuotes = [
+      "To be, or not to be, that is the question.",
+      "All the world's a stage, and all the men and women merely players.",
+      "I have a dream that one day this nation will rise up and live out the true meaning of its creed.",
+      "The only thing we have to fear is fear itself.",
+      "It was the best of times, it was the worst of times.",
+      "Call me Ishmael.",
+      "In the beginning God created the heavens and the earth.",
+      "That's one small step for man, one giant leap for mankind.",
+      "The unexamined life is not worth living.",
+      "Not all those who wander are lost.",
+      "It does not do to dwell on dreams and forget to live.",
+      "The only limit to our realization of tomorrow will be our doubts of today.",
+      "We are such stuff as dreams are made on.",
+      "The fault, dear Brutus, is not in our stars, but in ourselves.",
+      "All happy families are alike; each unhappy family is unhappy in its own way.",
+      "The truth is rarely pure and never simple.",
+      "Whatever our souls are made of, his and mine are the same.",
+      "So it goes.",
+      "Stay hungry, stay foolish.",
+      "You must be the change you wish to see in the world."
+    ];
+    const riverCanvas = document.getElementById('river-canvas');
+    const ctxRiver = riverCanvas.getContext('2d');
+    function resizeRiver() {
+      const box = riverCanvas.parentElement.getBoundingClientRect();
+      riverCanvas.width = box.width;
+      riverCanvas.height = box.height;
+    }
+    resizeRiver();
+    window.addEventListener('resize', resizeRiver);
+    // 文字河流动画参数
+    let riverState = 0; // 0:浮现阶段 1:汇聚阶段 2:河流阶段
+    let riverSentences = [];
+    let riverStartTime = Date.now();
+    let riverY = [];
+    function startRiver() {
+      riverState = 0;
+      riverSentences = [];
+      riverY = [];
+      riverStartTime = Date.now();
+    }
+    startRiver();
+
+    // 河流参数
+    const RIVER_COUNT = 18; // 主河流句子数
+    const RIVER_RADIUS_X = 600; // 加大长轴
+    const RIVER_RADIUS_Y = 200;
+    const RIVER_CENTER_X = () => riverCanvas.width/2 - 500; // 右移中心
+    const RIVER_CENTER_Y = () => riverCanvas.height*0.62 - 50;
+    const RIVER_SPEED = 0.05; // 环流速度
+    const RIVER_VISIBLE_ARC = 0.68; // 只渲染右侧0~0.68的环
+    const RIVER_DEPTH = 0.7; // 近大远小的深度范围
+
+    // 幽灵字句参数
+    const GHOST_COUNT = 32;
+    const ghosts = Array.from({length:GHOST_COUNT},()=>({
+      text: riverQuotes[Math.floor(Math.random()*riverQuotes.length)],
+      x: Math.random(),
+      y: Math.random(),
+      alpha: 0.08+Math.random()*0.08,
+      blur: 2+Math.random()*8,
+      speed: 0.0005+Math.random()*0.0008
+    }));
+
+    // 粒子参数
+    const PARTICLE_COUNT = 24;
+    const particles = Array.from({length:PARTICLE_COUNT},()=>({
+      theta: Math.random()*Math.PI*2,
+      r: 0.7+Math.random()*0.3,
+      speed: 0.001+Math.random()*0.001
+    }));
+
+    let activeSentences = []; // {text, progress, appearTime}
+    let lastAddTime = 0;
+    const ADD_INTERVAL = 1100; // 新句子涌出间隔（ms）
+
+    function drawRiver() {
+      ctxRiver.clearRect(0,0,riverCanvas.width,riverCanvas.height);
+      const w = riverCanvas.width, h = riverCanvas.height;
+      const t = (Date.now()-riverStartTime)/1000;
+
+      // 1. 背景幽灵字句
+      ghosts.forEach(g=>{
+        g.x += g.speed;
+        if(g.x>1) g.x=0;
+        ctxRiver.save();
+        ctxRiver.globalAlpha = g.alpha * (0.7+0.3*Math.sin(t*0.7+g.blur));
+        ctxRiver.font = `bold ${12+g.blur*2}px 'Share Tech Mono', 'Montserrat', Arial`;
+        ctxRiver.fillStyle = "#fff";
+        ctxRiver.textAlign = 'center';
+        ctxRiver.textBaseline = 'middle';
+        ctxRiver.filter = `blur(${g.blur}px)`;
+        ctxRiver.fillText(g.text, w*g.x, h*g.y);
+        ctxRiver.restore();
+      });
+
+      // 2. 背景粒子
+      particles.forEach(p=>{
+        p.theta += p.speed;
+        if(p.theta>Math.PI*2) p.theta-=Math.PI*2;
+        const x = RIVER_CENTER_X() + Math.cos(p.theta)*RIVER_RADIUS_X*1.1*p.r;
+        const y = RIVER_CENTER_Y() + Math.sin(p.theta)*RIVER_RADIUS_Y*1.1*p.r;
+        ctxRiver.save();
+        ctxRiver.globalAlpha = 0.13+0.12*Math.sin(t*1.2+p.theta*2);
+        ctxRiver.beginPath();
+        ctxRiver.arc(x, y, 2.5+2*Math.sin(t*2+p.theta), 0, Math.PI*2);
+        ctxRiver.fillStyle = "#fff";
+        ctxRiver.shadowColor = "#fff";
+        ctxRiver.shadowBlur = 8;
+        ctxRiver.fill();
+        ctxRiver.restore();
+      });
+
+      // 3. 主河流句子
+      for(let i=0;i<RIVER_COUNT;i++) {
+        // 句子在圆环上的进度
+        const p = ((t*RIVER_SPEED) + i/RIVER_COUNT) % 1;
+        // 角度，0为正右侧，顺时针
+        const theta = p * Math.PI * 2;
+        // 深度z，0~1，0为最近，1为最远
+        const z = 0.5 - 0.5*Math.cos(theta);
+        // 椭圆轨迹
+        const x = RIVER_CENTER_X() + Math.cos(theta)*RIVER_RADIUS_X;
+        const y = RIVER_CENTER_Y() + Math.sin(theta)*RIVER_RADIUS_Y*1.1 + Math.sin(theta*2+t*0.7+i)*18;
+        // 透明度/模糊/缩放
+        const scale = 0.7 + 0.7*(1-z)*RIVER_DEPTH;
+        const alpha = 0.18 + 0.82*(1-z)*0.95 + 0.12*Math.sin(t*1.2+i);
+        const blur = 2.5*z + 0.5 + 1.5*Math.abs(Math.sin(t*0.8+i));
+        // 呼吸感
+        const breath = 0.92 + 0.08*Math.sin(t*1.5+i*0.7);
+        // 句子内容
+        const text = riverQuotes[i%riverQuotes.length];
+        ctxRiver.save();
+        ctxRiver.globalAlpha = alpha*breath;
+        ctxRiver.font = `bold ${18*scale}px 'Share Tech Mono', 'Montserrat', Arial`;
+        ctxRiver.fillStyle = "#fff";
+        ctxRiver.textAlign = 'center';
+        ctxRiver.textBaseline = 'middle';
+        ctxRiver.filter = `blur(${blur}px)`;
+        ctxRiver.shadowColor = "#fff";
+        ctxRiver.shadowBlur = 8*(1-z);
+        ctxRiver.fillText(text, x, y);
+        ctxRiver.restore();
+      }
+
+      requestAnimationFrame(drawRiver);
+    }
+    drawRiver();

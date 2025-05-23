@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Typewriter - Post Human Bazaar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css?family=Share+Tech+Mono|Montserrat:400,700&display=swap" rel="stylesheet">
+  
+  <style>
+    html, body {
+      height: 100%; margin: 0; padding: 0;
+      background: #121212;
+      font-family: 'Share Tech Mono', 'Montserrat', monospace, Arial;
+      color: #fff;
+    }
+    body {
+      width: 100vw; min-height: 200vh;
+      overflow-y: auto;
+      background: #121212;
+    }
+    .main-grid-overlay {
+      position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 0;
+      pointer-events: none;
+    }
+    #river-canvas {
+      position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1;
+      pointer-events: none; opacity: 0.38; transition: opacity 0.6s;
+    }
+    #typewriter-section {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10;
+      transition: opacity 0.6s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      pointer-events: auto;
+    }
+    #typewriter-img {
+      position: absolute;
+      left: 13%;
+      top: 28vh;
+      transform: translateX(-50%, 0);
+      width: 75vw;
+      max-width: 75vw;
+      z-index: 3;
+      pointer-events: none;
+      user-select: none;
+      display: block;
+    }
+    /* 打印机图片下方模糊羽化渐变 */
+    #typewriter-img-blur {
+      position: absolute;
+      left: 13%;
+      top: calc(28vh + 75vw * 0.48); /* 约等于图片底部 */
+      width: 75vw;
+      height: 8vh;
+      z-index: 4;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 50% 0%, rgba(18,18,18,0.18) 0%, rgba(18,18,18,0.82) 80%, rgba(18,18,18,1) 100%);
+      filter: blur(16px);
+      opacity: 0.92;
+    }
+    .typewriter-canvas {
+      position: absolute;
+      left: 0; top: 0;
+      width: 90vw; height: 100vh;
+      z-index: 5;
+      display: block;
+      pointer-events: none;
+    }
+    .typewriter-input {
+      position: absolute;
+      left: 52%;
+      top: 39vh;
+      transform: translate(-50%, 0);
+      width: 44vw; max-width: 700px;
+      height: 22vh; max-height: 220px;
+      background: transparent;
+      color: #121212;
+      border: none;
+      outline: none;
+      resize: none;
+      font-size: 1.25rem;
+      font-family: 'Share Tech Mono', monospace;
+      z-index: 8;
+      caret-color: #121212;
+      line-height: 1.7;
+      letter-spacing: 0.04em;
+      overflow: hidden;
+      text-shadow: none;
+      text-align: left;
+    }
+    .mini-canvas-btn {
+      position: fixed;
+      left: 32px; top: 32px;
+      width: 180px; height: 180px;
+      border-radius: 16px;
+      background: rgba(18, 18, 18, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 32px rgba(255, 255, 255, 0.05);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      transition: background 0.25s, box-shadow 0.25s;
+      overflow: hidden;
+    }
+    .mini-canvas-btn:hover {
+      background: #fff;
+      box-shadow: 0 0 0 2px #fff, 0 0 64px 0 #fff, 0 2px 32px 0 rgba(255,255,255,0.18);
+    }
+    #mini-crown-canvas {
+      width: 100%; height: 100%;
+      display: block;
+      margin: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+    #back-arrow {
+      position: absolute;
+      left: 74px; top: 74px;
+      width: 32px; height: 32px;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+    }
+    .mini-canvas-btn:hover #back-arrow {
+      opacity: 1;
+    }
+    #char-cursor-canvas {
+      position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:999;pointer-events:none;
+    }
+    @media (max-width: 700px) {
+      .mini-canvas-btn { left: 8px; top: 8px; width: 120px; height: 120px; }
+      #back-arrow { left: 44px; top: 44px; width: 24px; height: 24px; }
+      .typewriter-input { width: 92vw; height: 22vh; font-size: 1rem; }
+      #typewriter-img { width: 98vw; }
+    }
+    /* 顶部科技感glitch标题 */
+    #glitch-title {
+      position: absolute;
+      top: 13vh;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 3.2rem;
+      font-family: 'Urbanist', 'Share Tech Mono', 'Montserrat', monospace, Arial;
+      color: #fff;
+      letter-spacing: 0.12em;
+      z-index: 20;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 16px #fff, 0 0 32px #00f2ff44;
+      white-space: nowrap;
+    }
+    @font-face {
+      font-family: 'UberNist Light';
+      src: url('fonts/ubernist-light.woff2') format('woff2'), url('fonts/ubernist-light.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+</head>
+<body>
+  <canvas class="main-grid-overlay"></canvas>
+  <canvas id="river-canvas"></canvas>
+  <div id="typewriter-section">
+    <img id="typewriter-img" src="images/wonderland/22.png" alt="typewriter" draggable="false"/>
+    <div id="typewriter-img-blur"></div>
+    <canvas class="typewriter-canvas" id="typewriterCanvas"></canvas>
+    <canvas id="floating-chars-canvas" style="position:absolute;left:0;top:0;width:100vw;height:100vh;z-index:7;pointer-events:none;"></canvas>
+    <textarea class="typewriter-input" id="typewriterInput" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+    <canvas id="char-cursor-canvas"></canvas>
+    <div class="mini-canvas-btn" id="miniCrownBtn">
+      <canvas id="mini-crown-canvas" width="180" height="180"></canvas>
+      <svg id="back-arrow" viewBox="0 0 32 32"><path d="M20 8l-8 8 8 8" stroke="#121212" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+  <div style="height: 120vh"></div>
+  <script>
+    // ====== 高亮互动科技感渐变Grid（主站同款） ======
+    (function(){
+      const gridCanvas = document.querySelector('.main-grid-overlay');
+      const ctx = gridCanvas.getContext('2d');
+      let W = 0, H = 0;
+      let cols = 24, rows = 14;
+      let cellW = 0, cellH = 0;
+      let mouse = {x: -1000, y: -1000};
+      function resize() {
+        W = gridCanvas.width = window.innerWidth;
+        H = gridCanvas.height = window.innerHeight;
+        cols = Math.max(16, Math.floor(W/48));
+        rows = Math.max(10, Math.floor(H/48));
+        cellW = W / cols;
+        cellH = H / rows;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+      document.addEventListener('mousemove', e => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+      function drawGrid() {
+        ctx.clearRect(0,0,W,H);
+        const t = Date.now()/1000;
+        for(let i=0;i<cols;i++){
+          for(let j=0;j<rows;j++){
+            const cx = (i+0.5)*cellW;
+            const cy = (j+0.5)*cellH;
+            const dist = Math.hypot(mouse.x-cx, mouse.y-cy);
+            let glow = Math.max(0, 1 - dist/180);
+            glow = Math.pow(glow, 1.5);
+            // 呼吸高亮
+            let pulse = 0.7+0.3*Math.sin(t*1.2+i*0.3+j*0.5);
+            ctx.save();
+            ctx.globalAlpha = 0.13 + 0.32*glow*pulse;
+            ctx.strokeStyle = `rgba(255,255,255,${0.13+0.32*glow*pulse})`;
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 12*glow*pulse;
+            ctx.lineWidth = 1.1 + 1.1*glow*pulse;
+            ctx.strokeRect(i*cellW+2, j*cellH+2, cellW-4, cellH-4);
+            ctx.restore();
+            // 交互点
+            if(glow>0.2) {
+              ctx.save();
+              ctx.globalAlpha = 0.10+0.18*glow*pulse;
+              ctx.beginPath();
+              ctx.arc(cx, cy, 2.5+2.5*glow*pulse, 0, Math.PI*2);
+              ctx.fillStyle = '#fff';
+              ctx.shadowColor = '#fff';
+              ctx.shadowBlur = 8*glow*pulse;
+              ctx.fill();
+              ctx.restore();
+            }
+          }
+        }
+        requestAnimationFrame(drawGrid);
+      }
+      drawGrid();
+    })();
+    // ====== 自下往上黑色渐变遮罩（呼吸科技感） ======
+    (function(){
+      const mask = document.createElement('div');
+      mask.style.position = 'fixed';
+      mask.style.left = '0';
+      mask.style.bottom = '0';
+      mask.style.width = '100vw';
+      mask.style.height = '38vh';
+      mask.style.pointerEvents = 'none';
+      mask.style.zIndex = '1000';
+      mask.style.background = 'linear-gradient(to top, rgba(18,18,18,0.98) 0%, rgba(18,18,18,0.82) 30%, rgba(18,18,18,0.0) 100%)';
+      document.body.appendChild(mask);
+      function animateMask() {
+        const t = Date.now()/1000;
+        const breath = 0.92+0.08*Math.sin(t*1.2);
+        mask.style.opacity = 0.82+0.18*Math.abs(Math.sin(t*0.7));
+        mask.style.background = `linear-gradient(to top, rgba(18,18,18,${0.98*breath}) 0%, rgba(18,18,18,${0.82*breath}) 30%, rgba(18,18,18,0.0) 100%)`;
+        requestAnimationFrame(animateMask);
+      }
+      animateMask();
+    })();
+    // ====== MiniCrown环形标题动画 ======
+    (function(){
+      const crownCanvas = document.getElementById('mini-crown-canvas');
+      const ctxCrown = crownCanvas.getContext('2d');
+      const TITLE = 'POST-HUMAN-BAZAAR';
+      function drawMiniCrown() {
+        const w = crownCanvas.width, h = crownCanvas.height;
+        ctxCrown.clearRect(0, 0, w, h);
+        const t = Date.now() * 0.001;
+        const center = {x: w/2, y: h/2};
+        const baseR = 35;
+        const dr = 12;
+        const fontBase = 10;
+        for(let r = 0; r < 3; r++) {
+          const radius = baseR + r * dr;
+          const angle = t * (0.2 + r * 0.1);
+          const chars = TITLE.split('');
+          for(let i = 0; i < chars.length; i++) {
+            const a = angle + i * (Math.PI * 2 / chars.length);
+            const x = center.x + Math.cos(a) * radius;
+            const y = center.y + Math.sin(a) * radius;
+            ctxCrown.save();
+            ctxCrown.globalAlpha = 0.3 + 0.7 * Math.sin(t + i);
+            ctxCrown.font = `${fontBase + 2*r}px Orbitron, Share Tech Mono, monospace`;
+            ctxCrown.textAlign = 'center';
+            ctxCrown.textBaseline = 'middle';
+            ctxCrown.fillStyle = '#fff';
+            ctxCrown.shadowColor = '#fff';
+            ctxCrown.shadowBlur = 6;
+            ctxCrown.fillText(chars[i], x, y);
+            ctxCrown.restore();
+          }
+        }
+        requestAnimationFrame(drawMiniCrown);
+      }
+      drawMiniCrown();
+      document.getElementById('miniCrownBtn').onclick = ()=>{ window.location.href = 'index.html'; };
+    })();
+    // ====== 打字机canvas与交互 ======
+    (function(){
+      const canvas = document.getElementById('typewriterCanvas');
+      const ctx = canvas.getContext('2d');
+      let W = 0, H = 0;
+      function resize() {
+        W = canvas.width = window.innerWidth * 0.9;
+        H = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+      // 打字机纸张区域参数（根据图片实际位置微调）
+      function getPaperRect() {
+        // 纸张大致在图片的上半部分，需与输入框重合
+        const pageW = window.innerWidth;
+        const pageH = window.innerHeight;
+        return {
+          x: pageW*0.32,
+          y: pageH*0.40,
+          w: pageW*0.40,
+          h: pageH*0.22
+        };
+      }
+      // 键盘布局
+      const keyRows = [
+        'QWERTYUIOP',
+        'ASDFGHJKL',
+        'ZXCVBNM'
+      ];
+      let keyMap = {};
+      function getKeyRects() {
+        const keys = [];
+        const kbW = W*0.7, kbH = H*0.18;
+        const kbX = (W-kbW)/2+W*0.06, kbY = H*0.78; // 右移再下移
+        let y = kbY;
+        keyRows.forEach((row, rowIdx) => {
+          let x = kbX + (kbW - row.length*60)/2;
+          for(let i=0;i<row.length;i++){
+            let w = 56;
+            let h = 48;
+            keys.push({
+              key: row[i],
+              x, y, w, h, row: rowIdx, isSpecial: false
+            });
+            x += w+12;
+          }
+          y += 56;
+        });
+        keyMap = {};
+        keys.forEach(k=>{ keyMap[k.key.toUpperCase()] = k; });
+        // Backspace/Enter 与普通按键同一层级
+        keyMap['ENTER'] = {x:kbX+kbW-70, y:kbY+56*2, w:70, h:48, key:'ENTER', row:3, isSpecial:false};
+        keyMap['BACKSPACE'] = {x:kbX, y:kbY+56*2, w:90, h:48, key:'BACKSPACE', row:3, isSpecial:false};
+        keys.push(keyMap['BACKSPACE']);
+        keys.push(keyMap['ENTER']);
+        return keys;
+      }
+      // 状态
+      let content = [];
+      let lines = [''];
+      let cursor = {line:0, col:0};
+      let pressedKey = null;
+      let lastInputTime = Date.now();
+      let lastPhiloTime = Date.now();
+      const PHILO_QUOTES = [
+        'ORDER FROM CHAOS: Meaning emerges through pattern recognition.',
+        'OBSERVER EFFECT: Reality is rendered through perception.',
+        'DIGITAL TURING TEST: Can randomness create true meaning?',
+        'NEON NIHILISM: In infinite time, all stories become possible.',
+        'THE MAP IS NOT THE TERRITORY.',
+        'THE MEDIUM IS THE MESSAGE.',
+        'WE ARE ALL MADE OF CODE.',
+        'THE VOID GAZES ALSO.',
+        'SIMULATION ORIGIN UNCERTAIN.',
+        'ERROR: MEANING NOT FOUND.'
+      ];
+      const STORAGE_KEY = 'typewriter_canvas_content_v1';
+      // 加载本地内容
+      function loadContent() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if(saved) {
+          try {
+            const obj = JSON.parse(saved);
+            lines = obj.lines||[''];
+            cursor = obj.cursor||{line:0,col:0};
+          } catch(e) { lines=['']; cursor={line:0,col:0}; }
+        }
+      }
+      loadContent();
+      function saveContent() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({lines, cursor}));
+      }
+      // 自动生成字符
+      function randomChar() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,.;:?!@#$%^&*()[]{}<>|/\\-_+=~';
+        return chars[Math.floor(Math.random()*chars.length)];
+      }
+      function insertChar(c) {
+        let line = lines[cursor.line];
+        lines[cursor.line] = line.slice(0,cursor.col) + c + line.slice(cursor.col);
+        cursor.col++;
+        // 超过最大行数自动移除第一行
+        if(lines.length > 5) {
+          lines.shift();
+          cursor.line = Math.max(0, cursor.line-1);
+        }
+        lastInputTime = Date.now();
+        saveContent();
+      }
+      function insertEnter() {
+        let line = lines[cursor.line];
+        let newLine = line.slice(cursor.col);
+        lines[cursor.line] = line.slice(0,cursor.col);
+        lines.splice(cursor.line+1,0,newLine);
+        cursor.line++;
+        cursor.col=0;
+        // 超过最大行数自动移除第一行
+        if(lines.length > 5) {
+          lines.shift();
+          cursor.line = Math.max(0, cursor.line-1);
+        }
+        lastInputTime = Date.now();
+        saveContent();
+      }
+      function insertBackspace() {
+        if(cursor.col>0) {
+          let line = lines[cursor.line];
+          lines[cursor.line] = line.slice(0,cursor.col-1)+line.slice(cursor.col);
+          cursor.col--;
+        } else if(cursor.line>0) {
+          cursor.col = lines[cursor.line-1].length;
+          lines[cursor.line-1] += lines[cursor.line];
+          lines.splice(cursor.line,1);
+          cursor.line--;
+        }
+        lastInputTime = Date.now();
+        saveContent();
+      }
+      function insertPhilo() {
+        // 随机完整语句直接插入，无括号和作者
+        const quote = PHILO_QUOTES[Math.floor(Math.random()*PHILO_QUOTES.length)].replace(/^\[|\]$/g, '').replace(/:.*$/, '');
+        lines.splice(cursor.line+1,0,quote);
+        cursor.line++;
+        cursor.col=0;
+        // 超过最大行数自动移除第一行
+        if(lines.length > 5) {
+          lines.shift();
+          cursor.line = Math.max(0, cursor.line-1);
+        }
+        lastPhiloTime = Date.now();
+        saveContent();
+      }
+      // 监听输入
+      const input = document.getElementById('typewriterInput');
+      function focusInput() {
+        input.focus();
+        setTimeout(()=>{
+          input.selectionStart = input.value.length;
+          input.selectionEnd = input.value.length;
+        }, 0);
+      }
+      input.value = lines.join('\n');
+      input.setSelectionRange(cursor.col+lines.slice(0,cursor.line).reduce((a,b)=>a+b.length+1,0), cursor.col+lines.slice(0,cursor.line).reduce((a,b)=>a+b.length+1,0));
+      input.addEventListener('input', e=>{
+        const val = input.value.replace(/\r/g,'').split('\n');
+        // 如果超过5行，只保留最后5行
+        if(val.length > 5) {
+          lines = val.slice(-5);
+          cursor.line = 4; // 设置为最后一行
+        } else {
+          lines = val;
+          cursor.line = lines.length-1;
+        }
+        cursor.col = lines[cursor.line].length;
+        lastInputTime = Date.now();
+        saveContent();
+      });
+      input.addEventListener('keydown', e=>{
+        if(e.key==='Enter') {
+          insertEnter();
+          e.preventDefault();
+        } else if(e.key==='Backspace') {
+          insertBackspace();
+          e.preventDefault();
+        } else if(e.key.length===1 && !e.ctrlKey && !e.metaKey) {
+          insertChar(e.key);
+          e.preventDefault();
+        }
+        pressedKey = e.key.toUpperCase();
+      });
+      input.addEventListener('keyup', e=>{
+        pressedKey = null;
+      });
+      // 自动生成字符（猴子打字机）
+      setInterval(()=>{
+        if(document.activeElement!==input && document.activeElement!==window) {
+          focusInput();
+        }
+        // 始终生成乱码
+        if(Math.random()<0.7) insertChar(randomChar());
+        if(Date.now()-lastPhiloTime>22000 && Math.random()<0.5) {
+          insertPhilo();
+        }
+        // 保持输入框内容同步
+        input.value = lines.join('\n');
+        input.setSelectionRange(cursor.col+lines.slice(0,cursor.line).reduce((a,b)=>a+b.length+1,0), cursor.col+lines.slice(0,cursor.line).reduce((a,b)=>a+b.length+1,0));
+      }, 120);
+      // 点击页面任意处聚焦输入
+      document.body.addEventListener('mousedown', ()=>{
+        focusInput();
+      });
+      // 绘制打字机键盘
+      function drawTypewriter() {
+        resize();
+        ctx.clearRect(0,0,W,H);
+        // 键盘
+        const keys = getKeyRects();
+        keys.forEach(k=>{
+          ctx.save();
+          ctx.globalAlpha = 0.92;
+          // 按键高亮色为灰度，Backspace/Enter与普通按键一致，仅微调
+          const isPressed = (pressedKey && (k.key===pressedKey));
+          ctx.fillStyle = isPressed ? '#eee' : 'rgba(18,18,18,0.68)';
+          ctx.shadowColor = isPressed ? '#fff' : '#fff2';
+          ctx.shadowBlur = isPressed ? 10 : 3;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = k.isSpecial ? 1.5 : 1.1;
+          ctx.beginPath();
+          const r = Math.min(k.w, k.h)/2 - 8;
+          ctx.arc(k.x + k.w/2, k.y + k.h/2, r, 0, Math.PI*2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+          ctx.save();
+          ctx.font = k.isSpecial ? 'bold 1.1rem Share Tech Mono, monospace' : 'bold 1.2rem Share Tech Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = isPressed ? '#222' : '#fff';
+          ctx.globalAlpha = 0.95;
+          ctx.fillText(k.key, k.x+k.w/2, k.y+k.h/2);
+          ctx.restore();
+        });
+        requestAnimationFrame(drawTypewriter);
+      }
+      drawTypewriter();
+      // ====== 随机分布横向漂浮字符 ======
+      (function(){
+        const floatCanvas = document.getElementById('floating-chars-canvas');
+        const ctxF = floatCanvas.getContext('2d');
+        let W = window.innerWidth, H = window.innerHeight;
+        function resizeFloat() {
+          W = floatCanvas.width = window.innerWidth;
+          H = floatCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeFloat);
+        resizeFloat();
+        // 纸张区域
+        function getFloatRect() {
+          const pageW = window.innerWidth;
+          const pageH = window.innerHeight;
+          return {
+            x: pageW*0.19,
+            y: pageH*0.135,
+            w: pageW*0.62,
+            h: pageH*0.22
+          };
+        }
+        // 漂浮字符参数
+        const FLOAT_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const FLOAT_COUNT = 22;
+        let floats = Array.from({length:FLOAT_COUNT},()=>({
+          x: Math.random(),
+          y: Math.random(),
+          speed: 0.12+Math.random()*0.18,
+          char: FLOAT_CHARS[Math.floor(Math.random()*FLOAT_CHARS.length)],
+          size: 22+Math.random()*16,
+          phase: Math.random()*Math.PI*2
+        }));
+        function drawFloats() {
+          ctxF.clearRect(0,0,W,H);
+          const rect = getFloatRect();
+          const t = Date.now()/1000;
+          floats.forEach(f=>{
+            f.x += f.speed/1000;
+            if(f.x>1) { f.x=0; f.y=Math.random(); f.char=FLOAT_CHARS[Math.floor(Math.random()*FLOAT_CHARS.length)]; f.size=22+Math.random()*16; f.phase=Math.random()*Math.PI*2; }
+            // 曲线漂浮
+            const px = rect.x + f.x*rect.w;
+            const py = rect.y + f.y*rect.h + Math.sin(t*1.2+f.phase+f.x*6)*18;
+            ctxF.save();
+            ctxF.globalAlpha = 0.18+0.22*Math.abs(Math.sin(t+f.phase));
+            ctxF.font = `bold ${f.size}px Share Tech Mono, monospace`;
+            ctxF.textAlign = 'center';
+            ctxF.textBaseline = 'middle';
+            ctxF.shadowColor = '#fff';
+            ctxF.shadowBlur = 8;
+            ctxF.fillStyle = '#fff';
+            ctxF.fillText(f.char, px, py);
+            ctxF.restore();
+          });
+          requestAnimationFrame(drawFloats);
+        }
+        drawFloats();
+      })();
+    })();
+    // ====== 字符迸射光标 ======
+    (function(){
+      const chars = 'POSTHUMANBAZAAR0123456789';
+      const canvas = document.getElementById('char-cursor-canvas');
+      const ctx = canvas.getContext('2d');
+      let W = window.innerWidth, H = window.innerHeight;
+      function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+      let particles = [];
+      let mouse = {x: W/2, y: H/2};
+      document.addEventListener('mousemove', e=>{
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+        emitParticles(mouse.x, mouse.y);
+      });
+      function emitParticles(x, y) {
+        for(let i=0;i<2;i++){
+          const angle = Math.random()*Math.PI*2;
+          const speed = 1.5+Math.random()*2.5;
+          const char = chars[Math.floor(Math.random()*chars.length)];
+          particles.push({
+            x, y,
+            vx: Math.cos(angle)*speed,
+            vy: Math.sin(angle)*speed,
+            char,
+            life: 60+Math.random()*30,
+            maxLife: 60+Math.random()*30,
+            size: 22+Math.random()*10,
+            baseAlpha: 0.38+Math.random()*0.38
+          });
+        }
+      }
+      function drawParticles() {
+        ctx.clearRect(0,0,W,H);
+        for(let i=particles.length-1;i>=0;i--){
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life--;
+          // 呼吸发光
+          const breath = 0.7+0.3*Math.sin((p.maxLife-p.life)/8);
+          const alpha = p.baseAlpha * (p.life/p.maxLife) * breath;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.font = `bold ${p.size}px Share Tech Mono, monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = '#fff';
+          ctx.shadowBlur = 16+16*breath;
+          ctx.fillStyle = '#fff';
+          ctx.fillText(p.char, p.x, p.y);
+          ctx.restore();
+          if(p.life<=0) particles.splice(i,1);
+        }
+        requestAnimationFrame(drawParticles);
+      }
+      drawParticles();
+    })();
+
+    // 文字河流效果（第四张卡片）
+    const riverQuotes = [
+      "To be, or not to be, that is the question.",
+      "All the world's a stage, and all the men and women merely players.",
+      "I have a dream that one day this nation will rise up and live out the true meaning of its creed.",
+      "The only thing we have to fear is fear itself.",
+      "It was the best of times, it was the worst of times.",
+      "Call me Ishmael.",
+      "In the beginning God created the heavens and the earth.",
+      "That's one small step for man, one giant leap for mankind.",
+      "The unexamined life is not worth living.",
+      "Not all those who wander are lost.",
+      "It does not do to dwell on dreams and forget to live.",
+      "The only limit to our realization of tomorrow will be our doubts of today.",
+      "We are such stuff as dreams are made on.",
+      "The fault, dear Brutus, is not in our stars, but in ourselves.",
+      "All happy families are alike; each unhappy family is unhappy in its own way.",
+      "The truth is rarely pure and never simple.",
+      "Whatever our souls are made of, his and mine are the same.",
+      "So it goes.",
+      "Stay hungry, stay foolish.",
+      "You must be the change you wish to see in the world."
+    ];
+    const riverCanvasElem = document.getElementById('river-canvas');
+    const ctxRiver = riverCanvasElem.getContext('2d');
+    function resizeRiver() {
+      const box = riverCanvasElem.parentElement.getBoundingClientRect();
+      riverCanvasElem.width = box.width;
+      riverCanvasElem.height = box.height;
+    }
+    resizeRiver();
+    window.addEventListener('resize', resizeRiver);
+    // ====== 河流高亮词汇为水流曲线漂浮 ======
+    let riverState = 0;
+    let riverSentences = [];
+    let riverStartTime = Date.now();
+    let riverY = [];
+    function startRiver() {
+      riverState = 0;
+      riverSentences = [];
+      riverY = [];
+      riverStartTime = Date.now();
+    }
+    startRiver();
+
+    // 河流参数
+    const RIVER_COUNT = 18;
+    const RIVER_RADIUS_X = riverCanvasElem.width; // 覆盖完整x轴
+    const RIVER_RADIUS_Y = riverCanvasElem.height; // 拓宽为屏幕高度100%
+    const RIVER_CENTER_X = () => riverCanvasElem.width / 2;
+    const RIVER_CENTER_Y = () => riverCanvasElem.height * 0.5;
+    const RIVER_SPEED = 0.05;
+    const RIVER_DEPTH = 0.7;
+
+    // 幽灵字句参数
+    const GHOST_COUNT = 32;
+    const ghosts = Array.from({length:GHOST_COUNT},()=>({
+      text: riverQuotes[Math.floor(Math.random()*riverQuotes.length)],
+      x: Math.random(),
+      y: Math.random(),
+      alpha: 0.08+Math.random()*0.08,
+      blur: 2+Math.random()*8,
+      speed: 0.0005+Math.random()*0.0008
+    }));
+
+    // 粒子参数
+    const PARTICLE_COUNT = 24;
+    const particles = Array.from({length:PARTICLE_COUNT},()=>({
+      theta: Math.random()*Math.PI*2,
+      r: 0.7+Math.random()*0.3,
+      speed: 0.001+Math.random()*0.001
+    }));
+
+    // 高亮词汇漂浮参数
+    const HIGHLIGHT_WORDS = [
+      'DREAM', 'CODE', 'SIMULATION', 'REALITY', 'VOID', 'OBSERVER', 'ORDER', 'CHAOS', 'NIHILISM', 'MESSAGE', 'TERRITORY', 'ORIGIN', 'ERROR', 'MEANING', 'STAGE', 'CHANGE', 'TRUTH', 'SOULS', 'FAMILY', 'TOMORROW'
+    ];
+    const HIGHLIGHT_COUNT = 7;
+    let highlights = Array.from({length:HIGHLIGHT_COUNT},()=>({
+      word: HIGHLIGHT_WORDS[Math.floor(Math.random()*HIGHLIGHT_WORDS.length)],
+      t: Math.random(),
+      speed: 0.04+Math.random()*0.06,
+      amp: 60+Math.random()*40,
+      phase: Math.random()*Math.PI*2
+    }));
+
+    let activeSentences = [];
+    let lastAddTime = 0;
+    const ADD_INTERVAL = 1100;
+
+    function drawRiver() {
+      ctxRiver.clearRect(0,0,riverCanvasElem.width,riverCanvasElem.height);
+      const w = riverCanvasElem.width, h = riverCanvasElem.height;
+      const t = (Date.now()-riverStartTime)/1000;
+
+      // 1. 背景幽灵字句
+      ghosts.forEach(g=>{
+        g.x += g.speed;
+        if(g.x>1) g.x=0;
+        ctxRiver.save();
+        ctxRiver.globalAlpha = g.alpha * (0.7+0.3*Math.sin(t*0.7+g.blur));
+        ctxRiver.font = `bold ${12+g.blur*2}px 'Share Tech Mono', 'Montserrat', Arial`;
+        ctxRiver.fillStyle = "#fff";
+        ctxRiver.textAlign = 'center';
+        ctxRiver.textBaseline = 'middle';
+        ctxRiver.filter = `blur(${g.blur}px)`;
+        ctxRiver.fillText(g.text, w*g.x, h*g.y);
+        ctxRiver.restore();
+      });
+
+      // 2. 背景粒子
+      particles.forEach(p=>{
+        p.theta += p.speed;
+        if(p.theta>Math.PI*2) p.theta-=Math.PI*2;
+        const x = RIVER_CENTER_X() + Math.cos(p.theta)*RIVER_RADIUS_X*1.1*p.r;
+        const y = RIVER_CENTER_Y() + Math.sin(p.theta)*RIVER_RADIUS_Y*1.1*p.r;
+        ctxRiver.save();
+        ctxRiver.globalAlpha = 0.13+0.12*Math.sin(t*1.2+p.theta*2);
+        ctxRiver.beginPath();
+        ctxRiver.arc(x, y, 2.5+2*Math.sin(t*2+p.theta), 0, Math.PI*2);
+        ctxRiver.fillStyle = "#fff";
+        ctxRiver.shadowColor = "#fff";
+        ctxRiver.shadowBlur = 8;
+        ctxRiver.fill();
+        ctxRiver.restore();
+      });
+
+      // 3. 主河流句子线性流水曲线运动
+      for(let i=0;i<RIVER_COUNT;i++) {
+        // 横向线性流动，覆盖完整x轴
+        const p = ((t*RIVER_SPEED) + i/RIVER_COUNT) % 1;
+        const x = riverCanvasElem.width * p;
+        // 曲线漂浮，覆盖y轴25%-75%
+        const y = RIVER_CENTER_Y() + Math.sin(p*2*Math.PI + t*0.7 + i)*220 + Math.sin(t*1.2+i)*44; // 增加一倍
+        // 呼吸出现消失感
+        let appear = Math.sin(Math.PI * Math.min(1, Math.max(0, (p-0.05)/0.9)));
+        appear = Math.max(0, appear);
+        const scale = 0.9 + 0.5*Math.sin(p*2*Math.PI + t*0.5 + i*0.2);
+        const alpha = 0.12 + 0.88*appear;
+        const blur = 0.5; // 降低模糊度
+        const text = riverQuotes[i%riverQuotes.length];
+        ctxRiver.save();
+        ctxRiver.globalAlpha = alpha;
+        ctxRiver.font = `normal ${18*scale}px 'Urbanist', 'Share Tech Mono', 'Montserrat', Arial`;
+        ctxRiver.fillStyle = "#fff";
+        ctxRiver.textAlign = 'center';
+        ctxRiver.textBaseline = 'middle';
+        ctxRiver.filter = `blur(${blur}px)`;
+        ctxRiver.shadowColor = "#fff";
+        ctxRiver.shadowBlur = 8;
+        ctxRiver.fillText(text, x, y);
+        ctxRiver.restore();
+      }
+
+      // 4. 高亮词汇水流曲线漂浮（覆盖完整x轴）
+      highlights.forEach(h=>{
+        h.t += h.speed/180;
+        if(h.t>1) {
+          h.t=0; h.word=HIGHLIGHT_WORDS[Math.floor(Math.random()*HIGHLIGHT_WORDS.length)];
+          h.amp=60+Math.random()*40; h.phase=Math.random()*Math.PI*2;
+        }
+        // 横向覆盖完整x轴
+        const px = riverCanvasElem.width * h.t;
+        const py = RIVER_CENTER_Y() + Math.sin(h.t*2*Math.PI+h.phase+t*0.7)*h.amp + Math.sin(t*1.2+h.phase)*22;
+        // 呼吸出现消失感
+        let appear = Math.sin(Math.PI * Math.min(1, Math.max(0, (h.t-0.05)/0.9)));
+        appear = Math.max(0, appear);
+        ctxRiver.save();
+        ctxRiver.globalAlpha = 0.18+0.62*appear;
+        ctxRiver.font = `normal 2.1rem 'Urbanist', 'Share Tech Mono', 'Montserrat', Arial`;
+        ctxRiver.textAlign = 'center';
+        ctxRiver.textBaseline = 'middle';
+        ctxRiver.shadowColor = '#fff';
+        ctxRiver.shadowBlur = 16;
+        ctxRiver.fillStyle = '#fff';
+        ctxRiver.fillText(h.word, px, py);
+        ctxRiver.restore();
+      });
+
+      requestAnimationFrame(drawRiver);
+    }
+    drawRiver();
+
+    // 滚动隐藏 typewriter，展示 river
+    const typewriterSection = document.getElementById('typewriter-section');
+    window.addEventListener('scroll', ()=>{
+      if(window.scrollY > 40) {
+        typewriterSection.style.opacity = 0;
+        typewriterSection.style.pointerEvents = 'none';
+        riverCanvasElem.style.opacity = 1;
+      } else {
+        typewriterSection.style.opacity = 1;
+        typewriterSection.style.pointerEvents = '';
+        riverCanvasElem.style.opacity = 0.38;
+      }
+    });
+
+    // ====== 顶部glitch科技感标题 ======
+    (function(){
+      const lettersAndSymbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-_+=;:<>,.[]{}';
+      const title = 'THE TYPEWRITER';
+      const titleDiv = document.createElement('div');
+      titleDiv.id = 'glitch-title';
+      document.body.appendChild(titleDiv);
+      let animating = false;
+      function getRandomChar() {
+        return lettersAndSymbols[Math.floor(Math.random()*lettersAndSymbols.length)];
+      }
+      async function glitchOnce() {
+        if(animating) return;
+        animating = true;
+        const duration = 50;
+        const revealDuration = 80;
+        const initialRandomDuration = 320;
+        function generateRandomText() {
+          return title.split('').map(()=>getRandomChar()).join('');
+        }
+        titleDiv.textContent = generateRandomText();
+        const endTime = Date.now() + initialRandomDuration;
+        while(Date.now() < endTime) {
+          await new Promise(r=>setTimeout(r, duration));
+          titleDiv.textContent = generateRandomText();
+        }
+        for(let i=0;i<title.length;i++) {
+          await new Promise(r=>setTimeout(r, revealDuration));
+          titleDiv.textContent =
+            title.slice(0,i+1) +
+            titleDiv.textContent.slice(i+1).split('').map(()=>getRandomChar()).join('');
+        }
+        animating = false;
+      }
+      glitchOnce();
+      setInterval(glitchOnce, 3400);
+    })();
+
+    // 确保每次进入打字区域是崭新的
+    function resetTypewriter() {
+      lines = [''];
+      cursor = {line:0, col:0};
+      input.value = '';
+      saveContent();
+    }
+    resetTypewriter();
+  </script>
+</body>
+</html>

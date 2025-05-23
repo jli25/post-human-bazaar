@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Matrix - Post-Human Bazaar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 字体与主站一致 -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #121212;
+      overflow: hidden;
+      font-family: 'Urbanist', 'Montserrat', Arial, Helvetica, sans-serif;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .content-card {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 94vw;
+      height: 94vh;
+      background: rgba(18, 18, 18, 0.85);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2),
+                  inset 0 0 40px rgba(255, 255, 255, 0.05);
+      overflow: visible;
+      z-index: 1;
+    }
+    .grid-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+      gap: 1px;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .grid-cell {
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+    .grid-cell.active {
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    /* minicanvas 返回按钮 */
+    .mini-view {
+      position: fixed;
+      left: 32px;
+      top: 32px;
+      width: 180px;
+      height: 180px;
+      border-radius: 16px;
+      background: rgba(18, 18, 18, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                  inset 0 0 32px rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      transition: background 0.25s, box-shadow 0.25s;
+      overflow: hidden;
+    }
+    .mini-view:hover {
+      background: #fff;
+      box-shadow: 0 0 0 2px #fff, 0 0 64px 0 #fff, 0 2px 32px 0 rgba(255,255,255,0.18);
+    }
+    #mini-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      margin: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+    #back-arrow {
+      position: absolute;
+      left: 74px;
+      top: 74px;
+      width: 32px;
+      height: 32px;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+    }
+    .mini-view:hover #back-arrow {
+      opacity: 1;
+    }
+    /* 摩尔纹预览容器 */
+    .moire-preview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .moire-preview iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .matrix-title {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Orbitron', 'Urbanist', Arial, sans-serif;
+      font-size: 3.2rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: #fff;
+      text-shadow: 0 2px 24px #0ff8, 0 0 8px #fff;
+      z-index: 10;
+      pointer-events: none;
+      user-select: none;
+    }
+    /* 你可以在此添加更多matrix专属样式 */
+  </style>
+</head>
+<body>
+  <div class="content-card">
+    <div class="grid-background" id="grid-bg"></div>
+    <div class="matrix-title">MATRIX</div>
+    <div class="moire-preview">
+      <iframe src="https://moire.constraint.systems/" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+  </div>
+  <div class="mini-view" id="mini-bg">
+    <canvas id="mini-canvas" width="180" height="180"></canvas>
+    <svg id="back-arrow" viewBox="0 0 32 32"><path d="M20 8l-8 8 8 8" stroke="#121212" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <script>
+    // 网格系统
+    const gridBg = document.getElementById('grid-bg');
+    const gridSize = 40;
+    let activeCells = new Set();
+    let mouseX = 0, mouseY = 0;
+    function createGrid() {
+      const width = gridBg.clientWidth;
+      const height = gridBg.clientHeight;
+      const cols = Math.ceil(width / gridSize);
+      const rows = Math.ceil(height / gridSize);
+      gridBg.innerHTML = '';
+      for(let i = 0; i < cols * rows; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell';
+        gridBg.appendChild(cell);
+      }
+    }
+    function updateGrid() {
+      const cells = gridBg.getElementsByClassName('grid-cell');
+      const cols = Math.ceil(gridBg.clientWidth / gridSize);
+      // 清除旧的激活状态
+      activeCells.forEach(index => {
+        if(cells[index]) cells[index].classList.remove('active');
+      });
+      activeCells.clear();
+      // 计算鼠标所在的网格位置
+      const mouseCol = Math.floor(mouseX / gridSize);
+      const mouseRow = Math.floor(mouseY / gridSize);
+      // 激活鼠标周围的网格
+      for(let i = -2; i <= 2; i++) {
+        for(let j = -2; j <= 2; j++) {
+          const col = mouseCol + i;
+          const row = mouseRow + j;
+          if(col >= 0 && col < cols && row >= 0) {
+            const index = col + row * cols;
+            if(cells[index]) {
+              const distance = Math.sqrt(i*i + j*j);
+              if(distance <= 2) {
+                cells[index].classList.add('active');
+                activeCells.add(index);
+              }
+            }
+          }
+        }
+      }
+    }
+    document.addEventListener('mousemove', (e) => {
+      const rect = gridBg.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+    window.addEventListener('resize', createGrid);
+    createGrid();
+
+    // 动画循环
+    function mainLoop() {
+      updateGrid();
+      requestAnimationFrame(mainLoop);
+    }
+    mainLoop();
+
+    // minicanvas 返回按钮
+    const miniBg = document.getElementById('mini-bg');
+    const miniCanvas = document.getElementById('mini-canvas');
+    const ctxCrown = miniCanvas.getContext('2d');
+    const TITLE = 'POST-HUMAN-BAZAAR';
+    function drawMiniCrown() {
+      const w = 180, h = 180;
+      ctxCrown.clearRect(0, 0, w, h);
+      const t = Date.now() * 0.001;
+      const center = {x: w/2, y: h/2};
+      const baseR = 35;
+      const dr = 12;
+      const fontBase = 10;
+      for(let r = 0; r < 3; r++) {
+        const radius = baseR + r * dr;
+        const angle = t * (0.2 + r * 0.1);
+        const chars = TITLE.split('');
+        for(let i = 0; i < chars.length; i++) {
+          const a = angle + i * (Math.PI * 2 / chars.length);
+          const x = center.x + Math.cos(a) * radius;
+          const y = center.y + Math.sin(a) * radius;
+          ctxCrown.save();
+          ctxCrown.globalAlpha = 0.3 + 0.7 * Math.sin(t + i);
+          ctxCrown.font = `${fontBase + 2*r}px Orbitron`;
+          ctxCrown.textAlign = 'center';
+          ctxCrown.textBaseline = 'middle';
+          ctxCrown.fillStyle = '#fff';
+          ctxCrown.shadowColor = '#fff';
+          ctxCrown.shadowBlur = 6;
+          ctxCrown.fillText(chars[i], x, y);
+          ctxCrown.restore();
+        }
+      }
+      requestAnimationFrame(drawMiniCrown);
+    }
+    drawMiniCrown();
+    miniBg.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

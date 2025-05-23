@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Anonymous</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&family=Doto:wght@700;900&display=swap" rel="stylesheet">
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.96/build/spline-viewer.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #121212;
+      overflow: hidden;
+      font-family: 'Urbanist', 'Montserrat', Arial, Helvetica, sans-serif;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      font-family: 'Montserrat', Arial, Helvetica, sans-serif;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      position: relative;
+    }
+    main {
+      width: 100vw;
+      height: 100vh;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+    article {
+      position: relative;
+      width: 100vw;
+      min-height: 300vh;
+    }
+    .content-card {
+      position: sticky;
+      top: 3vh;
+      width: 94vw;
+      height: 94vh;
+      margin: 0 auto;
+      background: rgba(12, 12, 12, 0.85);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2),
+                  inset 0 0 40px rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      z-index: 1;
+      transition: all 0.6s cubic-bezier(.4,0,.2,1);
+    }
+    .content-card:hover {
+      box-shadow: 0 0 60px rgba(255,255,255,0.15), inset 0 0 60px rgba(255,255,255,0.08);
+    }
+    .content-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s ease;
+    }
+    .scroll-card {
+      position: sticky;
+      top: 3vh;
+      width: 94vw;
+      height: 94vh;
+      margin: 0 auto;
+      background: rgba(18, 18, 18, 0.95);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2),
+                  inset 0 0 40px rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      z-index: 2;
+      transition: all 0.6s cubic-bezier(.4,0,.2,1);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .scroll-card.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .scroll-card:hover {
+      box-shadow: 0 0 60px rgba(255,255,255,0.15), inset 0 0 60px rgba(255,255,255,0.08);
+    }
+    .star-map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+    .scroll-spline {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 80%;
+      z-index: 2;
+      opacity: 0.9;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .scroll-spline spline-viewer {
+      width: 100%;
+      height: 100%;
+      transform: scale(0.8);
+      transition: transform 0.3s ease;
+      display: block;
+    }
+    .scroll-spline:hover spline-viewer {
+      transform: scale(0.85);
+    }
+    .grid-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+      gap: 1px;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .grid-cell {
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+    .grid-cell:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .grid-cell.active {
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    .crown-back-btn {
+      position: fixed;
+      left: 32px;
+      top: 32px;
+      width: 180px;
+      height: 180px;
+      border-radius: 16px;
+      background: rgba(18, 18, 18, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                  inset 0 0 32px rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      transition: background 0.25s, box-shadow 0.25s;
+      overflow: hidden;
+    }
+    .crown-back-btn:hover {
+      background: #fff;
+      box-shadow: 0 0 0 2px #fff, 0 0 64px 0 #fff, 0 2px 32px 0 rgba(255,255,255,0.18);
+    }
+    #crown-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      margin: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+    #back-arrow {
+      position: absolute;
+      left: 74px;
+      top: 74px;
+      width: 32px;
+      height: 32px;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+    }
+    .crown-back-btn:hover #back-arrow {
+      opacity: 1;
+    }
+    
+    /* 修改标题容器样式 */
+    .title-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 30;
+      pointer-events: auto;
+      cursor: pointer;
+      filter: drop-shadow(0 0 20px rgba(255,255,255,0.1));
+    }
+    
+    .title {
+      font-family: 'Doto', 'Urbanist', sans-serif;
+      font-size: 100px;
+      font-weight: 900;
+      text-transform: uppercase;
+      text-align: center;
+      position: relative;
+      background: linear-gradient(180deg, 
+        rgba(255,255,255,1) 0%,
+        rgba(255,255,255,0.9) 50%,
+        rgba(255,255,255,0.7) 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: blur(12px);
+      transition: all 0.3s ease;
+      pointer-events: auto;
+      text-shadow: 0 0 30px rgba(255,255,255,0.2);
+      letter-spacing: 0.1em;
+    }
+
+    .title.clear {
+      filter: blur(0);
+      mask-image: radial-gradient(
+        circle at var(--mouse-x) var(--mouse-y),
+        black 0%,
+        black 40%,
+        transparent 70%
+      );
+      -webkit-mask-image: radial-gradient(
+        circle at var(--mouse-x) var(--mouse-y),
+        black 0%,
+        black 40%,
+        transparent 70%
+      );
+    }
+
+    .title::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.15;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    /* Spline 容器样式 */
+    .spline-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      z-index: 5;
+      pointer-events: auto;
+      border-radius: 24px;
+      overflow: hidden;
+      opacity: 0.8;
+      transition: all 0.5s ease;
+    }
+
+    .black-transition {
+      position: absolute;
+      top: 100vh;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: rgba(0,0,0,0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 6;
+    }
+
+    spline-viewer {
+      width: 100%;
+      height: 100%;
+      transform: scale(1.05);
+      transition: filter 0.3s ease;
+    }
+
+    /* 修改模糊清除效果 */
+    .blur-clear {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: transparent;
+      pointer-events: none;
+      z-index: 31;
+      transform: translate(-50%, -50%);
+      display: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    .scroll-transition {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 15;
+      transition: opacity 0.5s ease;
+    }
+
+    #particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .new-card {
+      position: sticky;
+      top: 3vh;
+      width: 94vw;
+      height: 94vh;
+      margin: 0 auto;
+      background: rgba(12, 12, 12, 0.85);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2),
+                  inset 0 0 40px rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      z-index: 3;
+      transition: background 2.5s cubic-bezier(.4,0,.2,1), opacity 2.5s cubic-bezier(.4,0,.2,1);
+      opacity: 0.85;
+    }
+    .new-card.bg-dark {
+      background: rgba(0,0,0,0.9);
+      opacity: 0.9;
+    }
+    .new-card.bg-gif {
+      background: url('images/anonymus/Here.gif') center center/cover no-repeat, rgba(0,0,0,0.9);
+      animation: here-breath 2.2s cubic-bezier(.4,0,.2,1) 2, here-fadein 1.2s cubic-bezier(.4,0,.2,1) 1 4.4s forwards;
+      background-blend-mode: lighten;
+    }
+    @keyframes here-breath {
+      0% { background-color: rgba(0,0,0,0.9); }
+      30% { background-color: rgba(0,0,0,0.7); }
+      50% { background-color: rgba(0,0,0,0.9); }
+      80% { background-color: rgba(0,0,0,0.7); }
+      100% { background-color: rgba(0,0,0,0.9); }
+    }
+    @keyframes here-fadein {
+      0% { background-color: rgba(0,0,0,0.9); background-blend-mode: lighten; }
+      100% { background-color: rgba(0,0,0,0.5); background-blend-mode: lighten; }
+    }
+    .image-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 20;
+    }
+    .scroll-image {
+      position: static;
+      max-width: 25%;
+      max-height: 90%;
+      object-fit: contain;
+      opacity: 0;
+      transform: scale(1) translateY(0);
+      transition: opacity 1.8s cubic-bezier(.4,0,.2,1), transform 1.8s cubic-bezier(.4,0,.2,1);
+      filter: drop-shadow(0 0 24px rgba(0,0,0,0.22)) blur(1.5px);
+      border-radius: 24px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #fff 80%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #fff 80%, transparent 100%);
+      z-index: 21;
+      pointer-events: none;
+    }
+    .scroll-image.visible {
+      opacity: 1 !important;
+    }
+    .scroll-image.breath {
+      opacity: 0.25 !important;
+      transition: opacity 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    .scroll-image.glitch {
+      animation: glitch-img 0.7s linear 2;
+    }
+    @keyframes glitch-bg {
+      0% { filter: none; }
+      10% { filter: contrast(1.5) brightness(1.2) hue-rotate(10deg); }
+      20% { filter: blur(2px) contrast(1.2); }
+      30% { filter: none; }
+      40% { filter: contrast(1.7) brightness(1.3) hue-rotate(-10deg); }
+      50% { filter: blur(1.5px); }
+      60% { filter: none; }
+      100% { filter: none; }
+    }
+    @keyframes glitch-img {
+      0% { filter: none; transform: scale(1) translateY(var(--y)); }
+      10% { filter: contrast(1.5) brightness(1.2) hue-rotate(10deg); transform: scale(1.05) translateY(calc(var(--y) - 2%)); }
+      20% { filter: blur(2px) contrast(1.2); transform: scale(0.98) translateY(calc(var(--y) + 2%)); }
+      30% { filter: none; transform: scale(1) translateY(var(--y)); }
+      40% { filter: contrast(1.7) brightness(1.3) hue-rotate(-10deg); transform: scale(1.04) translateY(calc(var(--y) - 1%)); }
+      50% { filter: blur(1.5px); transform: scale(1.01) translateY(var(--y)); }
+      60% { filter: none; transform: scale(1) translateY(var(--y)); }
+      100% { filter: none; transform: scale(1) translateY(var(--y)); }
+    }
+    /* 扫描线glitch动画 */
+    .scanline-glitch {
+      position: absolute;
+      left: 0; top: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: lighten;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.18) 0px,
+        rgba(255,255,255,0.18) 2px,
+        transparent 2px,
+        transparent 8px
+      );
+      opacity: 0;
+      animation: scanline-glitch-anim 1.2s linear 2;
+    }
+    @keyframes scanline-glitch-anim {
+      0% { opacity: 0; }
+      10% { opacity: 0.7; }
+      30% { opacity: 0.3; }
+      50% { opacity: 0.8; }
+      70% { opacity: 0.2; }
+      100% { opacity: 0; }
+    }
+    /* vignette暗角 */
+    .vignette {
+      position: absolute;
+      left: 0; top: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 12;
+      background: radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.85) 100%);
+      opacity: 0.85;
+    }
+    /* Here遮罩动画 */
+    .here-mask {
+      position: absolute;
+      left: 0; top: 0; width: 100%; height: 100%;
+      z-index: 11;
+      pointer-events: none;
+      background: #000;
+      opacity: 0.9;
+      transition: opacity 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    .svg-card {
+      position: sticky;
+      top: 3vh;
+      width: 94vw;
+      height: 94vh;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 0 40px rgba(0,0,0,0.22), inset 0 0 40px rgba(255,255,255,0.04);
+      overflow: hidden;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.5s;
+    }
+    .svg-card:hover {
+      box-shadow: 0 0 80px 8px #fff4, 0 0 40px rgba(0,0,0,0.22), inset 0 0 40px rgba(255,255,255,0.04);
+    }
+    .svg-bg {
+      position: absolute;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background: #000;
+      z-index: 1;
+    }
+    .svg-sequence {
+      position: absolute;
+      left: 0; top: 0; width: 100%; height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .svg-invert {
+      position: absolute;
+      width: 16vw;
+      height: auto;
+      filter: invert(1) drop-shadow(0 0 12px #fff8);
+      transition: opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1);
+      opacity: 0.92;
+      background: transparent;
+      border-radius: 12px;
+      pointer-events: none;
+    }
+    .svg-invert.glitch {
+      animation: glitch-img 0.32s linear 1;
+    }
+    @keyframes glitch-img {
+      0% { filter: invert(1) brightness(1.2) contrast(1.2); transform: scale(1); }
+      20% { filter: invert(1) brightness(2) contrast(2) blur(1px); transform: scale(1.05); }
+      40% { filter: invert(1) brightness(1.2) contrast(1.2); transform: scale(0.98); }
+      60% { filter: invert(1) brightness(2) contrast(2) blur(1px); transform: scale(1.04); }
+      80% { filter: invert(1) brightness(1.2) contrast(1.2); transform: scale(1.01); }
+      100% { filter: invert(1); transform: scale(1); }
+    }
+    .svg-humans-video {
+      position: absolute;
+      left: 8vw; /* 向右偏移 */
+      top: 0; width: 84vw; height: 100%;
+      object-fit: cover;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 24px;
+      transition: opacity 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    .svg-card:hover .svg-humans-video {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+</head>
+<body>
+  <div id="particles-js"></div>
+  <main>
+    <article>
+      <div class="content-card">
+        <div class="content-wrapper">
+          <div class="grid-background" id="grid-bg"></div>
+          <div class="spline-container">
+            <spline-viewer url="https://prod.spline.design/w44KuL9CGoHV15o1/scene.splinecode" events-target="global" disable-scroll="true"></spline-viewer>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-card">
+        <div class="grid-background" id="scroll-grid-bg"></div>
+        <canvas class="star-map" id="star-map"></canvas>
+        <div class="scroll-spline" id="scroll-spline">
+          <spline-viewer id="spline-viewer" url="https://prod.spline.design/6ON5CzVUt5GlMWXd/scene.splinecode" events-target="global"></spline-viewer>
+        </div>
+        <div class="scroll-content">
+          <!-- 这里可以添加滚动卡片的内容 -->
+        </div>
+      </div>
+      <div class="new-card">
+        <div class="grid-background" id="new-grid-bg"></div>
+        <div class="image-container">
+          <img src="images/anonymus/1.png" class="scroll-image">
+          <img src="images/anonymus/2.png" class="scroll-image">
+          <img src="images/anonymus/3.png" class="scroll-image">
+          <img src="images/anonymus/4.png" class="scroll-image">
+        </div>
+        <div class="here-mask" id="here-mask"></div>
+        <div class="scanline-glitch" id="scanline-glitch"></div>
+        <div class="vignette"></div>
+      </div>
+      <div class="svg-card">
+        <div class="svg-bg"></div>
+        <div class="svg-sequence">
+          <img src="images/anonymus/1.svg" class="svg-invert" style="display:none;">
+          <img src="images/anonymus/2.svg" class="svg-invert" style="display:none;">
+          <img src="images/anonymus/3.svg" class="svg-invert" style="display:none;">
+          <img src="images/anonymus/4.svg" class="svg-invert" style="display:none;">
+          <img src="images/anonymus/5.svg" class="svg-invert" style="display:none;">
+          <img src="images/anonymus/6.svg" class="svg-invert" style="display:none;">
+          <img src="images/anonymus/7.svg" class="svg-invert" style="display:none;">
+          <img src="images/anonymus/8.svg" class="svg-invert" style="display:none;">
+        </div>
+        <video class="svg-humans-video" src="images/anonymus/humans.mp4" muted loop playsinline></video>
+      </div>
+    </article>
+  </main>
+  <div class="title-container">
+    <div class="title">THE ANONYMOUS</div>
+  </div>
+  <div class="blur-clear" id="blur-clear"></div>
+  <div class="crown-back-btn" id="crown-back-btn">
+    <canvas id="crown-canvas" width="180" height="180"></canvas>
+    <svg id="back-arrow" viewBox="0 0 32 32"><path d="M20 8l-8 8 8 8" stroke="#121212" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <script>
+    // 返回主页
+    document.getElementById('crown-back-btn').addEventListener('click',()=>window.location.href='index.html');
+
+    // 获取DOM元素
+    const blurClear = document.getElementById('blur-clear');
+    const titleContainer = document.querySelector('.title-container');
+    const title = document.querySelector('.title');
+    const splineContainer = document.querySelector('.spline-container');
+    const splineViewer = document.querySelector('spline-viewer');
+    const contentWrapper = document.querySelector('.content-wrapper');
+
+    // Crown环形标题动画
+    const crownCanvas = document.getElementById('crown-canvas');
+    const ctxCrown = crownCanvas.getContext('2d');
+    const TITLE = 'POST-HUMAN-BAZAAR';
+    function drawMiniCrown() {
+      const w = 180, h = 180;
+      ctxCrown.clearRect(0, 0, w, h);
+      const t = Date.now() * 0.001;
+      const center = {x: w/2, y: h/2};
+      const baseR = 35;
+      const dr = 12;
+      const fontBase = 10;
+      for(let r = 0; r < 3; r++) {
+        const radius = baseR + r * dr;
+        const angle = t * (0.2 + r * 0.1);
+        const chars = TITLE.split('');
+        for(let i = 0; i < chars.length; i++) {
+          const a = angle + i * (Math.PI * 2 / chars.length);
+          const x = center.x + Math.cos(a) * radius;
+          const y = center.y + Math.sin(a) * radius;
+          ctxCrown.save();
+          ctxCrown.globalAlpha = 0.3 + 0.7 * Math.sin(t + i);
+          ctxCrown.font = `${fontBase + 2*r}px Orbitron`;
+          ctxCrown.textAlign = 'center';
+          ctxCrown.textBaseline = 'middle';
+          ctxCrown.fillStyle = '#fff';
+          ctxCrown.shadowColor = '#fff';
+          ctxCrown.shadowBlur = 6;
+          ctxCrown.fillText(chars[i], x, y);
+          ctxCrown.restore();
+        }
+      }
+      requestAnimationFrame(drawMiniCrown);
+    }
+    drawMiniCrown();
+
+    // 网格动画
+    const gridBg = document.getElementById('grid-bg');
+    const gridSize = 40;
+    let activeCells = new Set();
+    let mouseX = 0, mouseY = 0;
+
+    function createGrid() {
+      const width = gridBg.clientWidth;
+      const height = gridBg.clientHeight;
+      const cols = Math.ceil(width / gridSize);
+      const rows = Math.ceil(height / gridSize);
+      gridBg.innerHTML = '';
+      for(let i = 0; i < cols * rows; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell';
+        gridBg.appendChild(cell);
+      }
+    }
+
+    function updateGrid() {
+      const cells = gridBg.getElementsByClassName('grid-cell');
+      const cols = Math.ceil(gridBg.clientWidth / gridSize);
+      
+      // 清除旧的激活状态
+      activeCells.forEach(index => {
+        if(cells[index]) cells[index].classList.remove('active');
+      });
+      activeCells.clear();
+      
+      // 计算鼠标所在的网格位置
+      const mouseCol = Math.floor(mouseX / gridSize);
+      const mouseRow = Math.floor(mouseY / gridSize);
+      
+      // 激活鼠标周围的网格
+      for(let i = -2; i <= 2; i++) {
+        for(let j = -2; j <= 2; j++) {
+          const col = mouseCol + i;
+          const row = mouseRow + j;
+          if(col >= 0 && col < cols && row >= 0) {
+            const index = col + row * cols;
+            if(cells[index]) {
+              const distance = Math.sqrt(i*i + j*j);
+              if(distance <= 2) {
+                cells[index].classList.add('active');
+                activeCells.add(index);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      const rect = gridBg.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+      updateGrid();
+    });
+
+    window.addEventListener('resize', () => {
+      createGrid();
+    });
+
+    createGrid();
+    
+    // 修改鼠标悬停效果
+    titleContainer.addEventListener('mouseenter', () => {
+      blurClear.style.display = 'block';
+      splineContainer.style.filter = 'blur(8px)';
+    });
+
+    titleContainer.addEventListener('mouseleave', () => {
+      blurClear.style.display = 'none';
+      splineContainer.style.filter = 'blur(0)';
+      title.classList.remove('clear');
+    });
+
+    titleContainer.addEventListener('mousemove', (e) => {
+      const rect = titleContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // 计算鼠标位置相对于标题中心的距离
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+      
+      // 更新清晰区域的位置
+      title.style.setProperty('--mouse-x', `${x}px`);
+      title.style.setProperty('--mouse-y', `${y}px`);
+      
+      // 添加动态投影效果
+      const angle = Math.atan2(y - centerY, x - centerX);
+      const distanceX = Math.cos(angle) * 20;
+      const distanceY = Math.sin(angle) * 20;
+      title.style.textShadow = `${distanceX}px ${distanceY}px 30px rgba(255,255,255,0.3)`;
+
+      // 在鼠标位置创建清晰区域
+      if (distance < rect.width / 2) {
+        title.classList.add('clear');
+      } else {
+        title.classList.remove('clear');
+      }
+    });
+
+    // 修改滚动过渡效果
+    const scrollCard = document.querySelector('.scroll-card');
+    const scrollSpline = document.getElementById('scroll-spline');
+    const main = document.querySelector('main');
+    
+    main.addEventListener('scroll', () => {
+      const scrollPosition = main.scrollTop;
+      const windowHeight = window.innerHeight;
+      const scrollThreshold = windowHeight * 0.3;
+
+      // 根据滚动位置调整标题的可见性
+      const titleOpacity = Math.max(0, 1 - (scrollPosition / scrollThreshold));
+      titleContainer.style.opacity = titleOpacity;
+
+      // 根据滚动位置调整 Spline 容器的可见性
+      const splineOpacity = Math.max(0, 1 - (scrollPosition / scrollThreshold));
+      splineContainer.style.opacity = splineOpacity;
+
+      // 控制滚动卡片的显示
+      if (scrollPosition > windowHeight * 0.2) {
+        scrollCard.classList.add('active');
+      } else {
+        scrollCard.classList.remove('active');
+      }
+    });
+
+    // 禁用 Spline 的滚轮交互
+    splineViewer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+
+    // 确保 Spline 不会干扰鼠标事件
+    splineViewer.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    // 初始化粒子系统
+    particlesJS('particles-js', {
+      particles: {
+        number: {
+          value: 100,
+          density: {
+            enable: true,
+            value_area: 800
+          }
+        },
+        color: {
+          value: '#ffffff'
+        },
+        shape: {
+          type: 'circle'
+        },
+        opacity: {
+          value: 0.3,
+          random: true,
+          anim: {
+            enable: true,
+            speed: 1,
+            opacity_min: 0.1,
+            sync: false
+          }
+        },
+        size: {
+          value: 1,
+          random: true,
+          anim: {
+            enable: true,
+            speed: 2,
+            size_min: 0.1,
+            sync: false
+          }
+        },
+        line_linked: {
+          enable: false
+        },
+        move: {
+          enable: true,
+          speed: 0.5,
+          direction: 'none',
+          random: true,
+          straight: false,
+          out_mode: 'out',
+          bounce: false
+        }
+      },
+      interactivity: {
+        detect_on: 'canvas',
+        events: {
+          onhover: {
+            enable: false
+          },
+          onclick: {
+            enable: false
+          },
+          resize: true
+        }
+      },
+      retina_detect: true
+    });
+
+    // 初始化滚动卡片的网格背景
+    const scrollGridBg = document.getElementById('scroll-grid-bg');
+    createGrid(scrollGridBg);
+
+    // 星环动画升级
+    const starMap = document.getElementById('star-map');
+    const ctx = starMap.getContext('2d');
+    let time = 0;
+
+    // 3D矩阵工具
+    function rotate3D([x, y, z], rx, ry, rz) {
+      // 绕X轴
+      let y1 = y * Math.cos(rx) - z * Math.sin(rx);
+      let z1 = y * Math.sin(rx) + z * Math.cos(rx);
+      // 绕Y轴
+      let x2 = x * Math.cos(ry) + z1 * Math.sin(ry);
+      let z2 = -x * Math.sin(ry) + z1 * Math.cos(ry);
+      // 绕Z轴
+      let x3 = x2 * Math.cos(rz) - y1 * Math.sin(rz);
+      let y3 = x2 * Math.sin(rz) + y1 * Math.cos(rz);
+      return [x3, y3, z2];
+    }
+
+    // 圆环参数
+    const ringCount = 5;
+    const ringColors = Array(ringCount).fill('rgba(255,255,255,0.18)');
+    const ringRadii = [0.18, 0.23, 0.28, 0.33, 0.38];
+    const ringSpeeds = [0.18, -0.12, 0.09, -0.15, 0.13];
+    const ringAxis = [
+      [1,0,0], [0,1,0], [1,1,0], [0,1,1], [1,0,1]
+    ];
+
+    // 生成每层粒子的随机相位
+    const ringParticlePhases = Array.from({length: ringCount}, (_, r) => {
+      const n = 3 + r; // 每层3~7个粒子
+      return Array.from({length: n}, () => Math.random() * Math.PI * 2);
+    });
+
+    function drawFourStar(cx, cy, r, rot, alpha=0.4) {
+      // 绘制平面四芒星
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot);
+      ctx.beginPath();
+      for(let i=0;i<4;i++){
+        const angle = (Math.PI/2)*i;
+        const x = Math.cos(angle)*r;
+        const y = Math.sin(angle)*r;
+        if(i===0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 1.3;
+      ctx.shadowColor = '#fff';
+      ctx.shadowBlur = 4;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawStarMap() {
+      const w = starMap.width;
+      const h = starMap.height;
+      const centerX = w / 2;
+      const centerY = h / 2;
+      const maxRadius = Math.min(w, h) * 0.45;
+      ctx.clearRect(0, 0, w, h);
+      ctx.save();
+      // 多圆环3D旋转+呼吸闪烁+原子粒子
+      for(let r=0;r<ringCount;r++){
+        ctx.save();
+        ctx.beginPath();
+        let last = null;
+        // 呼吸闪烁
+        const breath = 0.5 + 0.5 * Math.sin(time*2.2 + r*1.2);
+        // 星环旋转速度加快
+        for(let a=0;a<=Math.PI*2+0.01;a+=0.012){
+          // 3D圆环点
+          let x = Math.cos(a) * maxRadius * ringRadii[r];
+          let y = Math.sin(a) * maxRadius * ringRadii[r];
+          let z = 0;
+          // 3D旋转
+          const speed = ringSpeeds[r]*2.5; // 速度提升
+          const axis = ringAxis[r];
+          const rx = axis[0] * time * speed;
+          const ry = axis[1] * time * speed;
+          const rz = axis[2] * time * speed;
+          const [x3, y3, z3] = rotate3D([x, y, z], rx, ry, rz);
+          // 透视投影
+          const perspective = 700/(700-z3);
+          const px = centerX + x3 * perspective;
+          const py = centerY + y3 * perspective;
+          if(last==null) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+          last = [px, py];
+        }
+        ctx.strokeStyle = `rgba(255,255,255,${0.09+0.18*breath})`;
+        ctx.lineWidth = 0.8 - r*0.12;
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 3 - r*0.5;
+        ctx.stroke();
+        // 原子粒子（数量减少，分布更随机，运动加快）
+        const phases = ringParticlePhases[r];
+        const particleCount = phases.length;
+        for(let p=0;p<particleCount;p++){
+          const phase = phases[p] + time*2.2 + r*0.7;
+          let x = Math.cos(phase) * maxRadius * ringRadii[r];
+          let y = Math.sin(phase) * maxRadius * ringRadii[r];
+          let z = 0;
+          // 3D旋转
+          const speed = ringSpeeds[r]*2.5;
+          const axis = ringAxis[r];
+          const rx = axis[0] * time * speed;
+          const ry = axis[1] * time * speed;
+          const rz = axis[2] * time * speed;
+          const [x3, y3, z3] = rotate3D([x, y, z], rx, ry, rz);
+          const perspective = 700/(700-z3);
+          const px = centerX + x3 * perspective;
+          const py = centerY + y3 * perspective;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(px, py, 1.5+0.5*breath, 0, Math.PI*2);
+          ctx.fillStyle = `rgba(255,255,255,${0.22+0.18*breath})`;
+          ctx.shadowColor = '#fff';
+          ctx.shadowBlur = 4;
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+      // 中央两个重叠四芒星
+      drawFourStar(centerX, centerY, maxRadius*0.16, time*1.2, 0.32);
+      drawFourStar(centerX, centerY, maxRadius*0.16, time*1.2+Math.PI/4, 0.32);
+      ctx.restore();
+      time += 0.032;
+      requestAnimationFrame(drawStarMap);
+    }
+    function resizeStarMap() {
+      const rect = starMap.parentElement.getBoundingClientRect();
+      starMap.width = rect.width;
+      starMap.height = rect.height;
+    }
+    resizeStarMap();
+    drawStarMap();
+    window.addEventListener('resize', resizeStarMap);
+
+    // Spline交互重置
+    let lastActive = true;
+    function resetSpline() {
+      const old = document.getElementById('spline-viewer');
+      if(old) old.remove();
+      const newSpline = document.createElement('spline-viewer');
+      newSpline.setAttribute('id','spline-viewer');
+      newSpline.setAttribute('url','https://prod.spline.design/6ON5CzVUt5GlMWXd/scene.splinecode');
+      newSpline.setAttribute('events-target','global');
+      scrollSpline.appendChild(newSpline);
+    }
+    // 监听卡片focus离开
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState==='hidden') resetSpline();
+    });
+    window.addEventListener('blur',()=>resetSpline());
+    // 监听滚动离开
+    main.addEventListener('scroll',()=>{
+      const rect = scrollCard.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const active = rect.top < vh*0.8 && rect.bottom > vh*0.2;
+      if(!active && lastActive) {
+        resetSpline();
+      }
+      lastActive = active;
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 卡片颜色和透明度渐变
+      const newCard = document.querySelector('.new-card');
+      const hereMask = document.getElementById('here-mask');
+      setTimeout(() => {
+        newCard.classList.add('bg-dark');
+      }, 600); // 0.6秒后开始加深
+
+      // 图片浮现动画
+      const images = newCard.querySelectorAll('.scroll-image');
+      // y错落分布
+      const yOffsets = ['-18%', '10%', '28%', '-8%'];
+      images.forEach((img, index) => {
+        img.style.setProperty('--y', yOffsets[index]);
+        img.style.transform = `scale(1) translateY(${yOffsets[index]})`;
+        setTimeout(() => {
+          img.classList.add('visible');
+          // 2秒后再次隐入黑暗
+          setTimeout(() => {
+            img.classList.remove('visible');
+          }, 2000);
+        }, index * 3000 + 1200); // 每隔3秒浮现一张，整体延后1.2秒
+      });
+
+      // 所有图片浮现后5秒，背景渐变为gif
+      setTimeout(() => {
+        newCard.classList.add('bg-gif');
+        // Here遮罩呼吸两次后渐亮
+        let breath = 0;
+        function doBreath() {
+          if (breath < 2) {
+            hereMask.style.opacity = 0.6;
+            setTimeout(()=>{
+              hereMask.style.opacity = 0.9;
+              setTimeout(()=>{
+                breath++;
+                doBreath();
+              }, 600);
+            }, 600);
+          } else {
+            // 渐亮到0.5遮罩
+            hereMask.style.opacity = 0.5;
+          }
+        }
+        setTimeout(doBreath, 200); // 稍作延迟
+      }, 1200 + 3*3000 + 5000);
+
+      // 最后一张图片消失后三秒，扫描线glitch动画+二次亮起
+      setTimeout(() => {
+        document.getElementById('scanline-glitch').style.opacity = 1;
+        setTimeout(()=>{
+          document.getElementById('scanline-glitch').style.opacity = 0;
+          // 图片和Here二次亮起
+          images.forEach(img => img.classList.add('visible'));
+          hereMask.style.opacity = 0.5;
+
+          // 四张图片分别不定时呼吸（暗下再亮起，循环，节奏更平缓）
+          function startBreath(img) {
+            function breathOnce() {
+              img.classList.add('breath');
+              setTimeout(()=>{
+                img.classList.remove('breath');
+                // 下一次呼吸，间隔2.5~4.5秒随机
+                setTimeout(breathOnce, 2500 + Math.random()*2000);
+              }, 320);
+            }
+            setTimeout(breathOnce, 1800 + Math.random()*1800);
+          }
+          images.forEach(img => startBreath(img));
+        }, 2400);
+      }, 1200 + 3*3000 + 2000 + 3000);
+
+      // SVG线条勾画动画（随机分布、缩放、依次描边）
+      const svgImgs = document.querySelectorAll('.svg-invert');
+      const used = [];
+      svgImgs.forEach((img, idx) => {
+        // 随机位置，允许适度交叠
+        let x, y, overlap;
+        let tryCount = 0;
+        do {
+          x = 10 + Math.random()*70; // 10vw~80vw
+          y = 10 + Math.random()*70; // 10vh~80vh
+          overlap = used.some(pos => Math.abs(pos.x-x)<14 && Math.abs(pos.y-y)<14);
+          tryCount++;
+        } while(overlap && tryCount<8);
+        used.push({x, y});
+        img.style.left = x+'vw';
+        img.style.top = y+'vh';
+        // 随机缩放
+        const scale = 0.6 + Math.random()*0.9;
+        img.style.transform = `scale(${scale})`;
+        setTimeout(()=>{
+          img.style.display = 'block';
+          img.style.opacity = 1;
+          img.classList.add('glitch');
+          setTimeout(()=>img.classList.remove('glitch'), 320);
+        }, idx * 900 + 800);
+      });
+
+      // svg-card hover时自动播放视频
+      const svgCard = document.querySelector('.svg-card');
+      const humansVideo = svgCard.querySelector('.svg-humans-video');
+      svgCard.addEventListener('mouseenter',()=>{
+        humansVideo.play();
+      });
+      svgCard.addEventListener('mouseleave',()=>{
+        humansVideo.pause();
+        humansVideo.currentTime = 0;
+      });
+    });
+  </script>
+</body>
+</html> 
